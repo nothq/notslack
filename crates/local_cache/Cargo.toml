@@ -1,0 +1,30 @@
+[package]
+name = "notslack-local-cache"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "local_cache"
+
+[features]
+test-support = []
+
+[dependencies]
+aes-gcm-siv = "0.11.1"
+base64.workspace = true
+fs2.workspace = true
+rand = "0.8.5"
+secret_store = { package = "notslack-secret-store", path = "../secret_store" }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+zeroize = "1.8.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = "3.7.0"
+security-framework-sys = "2.17.0"
+
+[lints]
+workspace = true

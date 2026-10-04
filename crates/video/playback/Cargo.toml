@@ -1,0 +1,29 @@
+[package]
+name = "notslack-video-playback"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "video_playback"
+
+[features]
+default = []
+
+[dependencies]
+gpui_components = { package = "notslack-gpui-components", path = "../../gpui-components" }
+cpal = "0.15"
+gpui.workspace = true
+image.workspace = true
+log = "0.4"
+parking_lot = "0.12"
+theme.workspace = true
+thiserror.workspace = true
+url.workspace = true
+video_native = { package = "notslack-video-native", path = "../native" }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }

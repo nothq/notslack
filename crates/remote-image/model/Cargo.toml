@@ -1,0 +1,11 @@
+[package]
+name = "notslack-remote-image-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "remote_image_model"
+
+[lints]
+workspace = true

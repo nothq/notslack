@@ -1,0 +1,76 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/app/model",
+    "crates/chat",
+    "crates/gpui-components",
+    "crates/local_cache",
+    "crates/media/capture",
+    "crates/notslack",
+    "crates/remote-image/model",
+    "crates/secret_store",
+    "crates/video/native",
+    "crates/video/playback",
+]
+default-members = ["crates/notslack"]
+
+[workspace.package]
+edition = "2021"
+license = "AGPL-3.0-only"
+version = "0.1.0"
+
+[workspace.dependencies]
+anyhow = "1.0.100"
+async-channel = "2.5"
+axum = { version = "0.8", features = ["json", "macros", "tokio", "ws", "http1"] }
+base64 = "0.22"
+chrono = { version = "0.4", features = ["clock", "serde", "std"] }
+chrono-tz = "0.10"
+core-foundation = "0.10"
+dirs = "6"
+emojis = "0.8"
+flate2 = "1.1"
+fs2 = "0.4"
+futures-util = "0.3"
+getrandom = "0.3"
+gpui = { git = "https://github.com/zed-industries/zed", rev = "552fc9f3c3c775276c2ce3f0fb93f1f4c2c18ba6" }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "552fc9f3c3c775276c2ce3f0fb93f1f4c2c18ba6", features = ["font-kit", "x11"] }
+iana-time-zone = "0.1"
+image = "0.25.10"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "cookies", "gzip", "json", "multipart", "rustls-tls", "stream", "zstd"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tempfile = "3.23"
+theme = { git = "https://github.com/zed-industries/zed", rev = "552fc9f3c3c775276c2ce3f0fb93f1f4c2c18ba6" }
+thiserror = "2.0"
+time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing"] }
+tokio = { version = "1.48", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+url = "2"
+uuid = { version = "1.18", features = ["serde", "v4", "v5"] }
+
+# GPUI's dependency pins, matching the Zed revision above.
+[patch.crates-io]
+async-process = { git = "https://github.com/zed-industries/async-process.git", rev = "0b6d6713570af61806e1e5cb40e0f757cb93fd9d" }
+async-task = { git = "https://github.com/smol-rs/async-task.git", rev = "b4486cd71e4e94fbda54ce6302444de14f4d190e" }
+block = { git = "https://github.com/TeamCadenceAI/rust-block", rev = "127f664ab583a20b099d163601d0698ae256c7ac" }
+calloop = { git = "https://github.com/zed-industries/calloop" }
+naga = { git = "https://github.com/zed-industries/wgpu.git", branch = "v29" }
+windows-capture = { git = "https://github.com/zed-industries/windows-capture.git", rev = "f0d6c1b6691db75461b732f6d5ff56eed002eeb9" }
+
+[workspace.lints.clippy]
+cognitive_complexity = "deny"
+dbg_macro = "deny"
+todo = "deny"
+too_many_arguments = "deny"
+too_many_lines = "deny"
+type_complexity = "deny"
+unimplemented = "deny"
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+opt-level = 2
+debug = false

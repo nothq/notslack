@@ -1,0 +1,21 @@
+[package]
+name = "notslack-gpui-components"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "gpui_components"
+
+[dependencies]
+app_model = { package = "notslack-app-model", path = "../app/model" }
+gpui.workspace = true
+image.workspace = true
+unicode-segmentation = "1.12"
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
+gpui_platform = { workspace = true, features = ["test-support"] }
+
+[lints]
+workspace = true
