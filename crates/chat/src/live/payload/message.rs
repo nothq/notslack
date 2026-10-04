@@ -259,7 +259,7 @@ mod tests {
             SlackMessageClientId::new("0a45a086-f507-49f0-a68b-85c04fc2804e".to_string())
                 .expect("test client message id must be valid");
         let response = serde_json::json!({
-            "channel": "C_AICRAZE",
+            "channel": "C_DESIGN",
             "ts": "1710000000.000100",
             "message": {
                 "team": "TTEST",
@@ -271,7 +271,7 @@ mod tests {
 
         let receipt = slack_message_send_receipt_from_payload(SlackMessageSendReceiptPayloads {
             team_id: "TTEST",
-            conversation_id: "C_AICRAZE",
+            conversation_id: "C_DESIGN",
             client_message_id: &client_message_id,
             response: &response,
             users: &HashMap::new(),
@@ -293,7 +293,7 @@ mod tests {
             SlackMessageClientId::new("0a45a086-f507-49f0-a68b-85c04fc2804e".to_string())
                 .expect("test client message id must be valid");
         let response = serde_json::json!({
-            "channel": "C_AICRAZE",
+            "channel": "C_DESIGN",
             "ts": "1710000000.000100",
             "message": {
                 "team": "TTEST",
@@ -306,7 +306,7 @@ mod tests {
 
         let error = slack_message_send_receipt_from_payload(SlackMessageSendReceiptPayloads {
             team_id: "TTEST",
-            conversation_id: "C_AICRAZE",
+            conversation_id: "C_DESIGN",
             client_message_id: &client_message_id,
             response: &response,
             users: &HashMap::new(),

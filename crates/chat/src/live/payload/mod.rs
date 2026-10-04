@@ -47,6 +47,6 @@ pub(crate) fn slack_activity_actor_from_user_payload(
 }
 
 pub fn load_slack_remote_image(url: &str) -> Result<SlackAttachmentPreview, String> {
-    let (base64, mimetype) = load_remote_image(url, std::time::Duration::from_secs(15))?;
-    Ok(SlackAttachmentPreview { base64, mimetype })
+    let (bytes, mimetype) = load_remote_image(url, std::time::Duration::from_secs(15))?;
+    Ok(SlackAttachmentPreview { bytes, mimetype })
 }

@@ -4,7 +4,6 @@ use crate::model::{
     SlackAttachment, SlackAttachmentMedia, SlackAttachmentMediaKind, SlackAttachmentPreviewSize,
     SlackAttachmentSource, SlackLegacyAttachmentFile, SlackLegacyAttachmentMetadata,
 };
-use base64::Engine as _;
 use serde_json::Value;
 
 use crate::live::api::SlackApiClient;
@@ -54,14 +53,14 @@ pub(crate) fn load_slack_attachment_preview(
     api: &SlackApiClient,
     url: &str,
     timeout: std::time::Duration,
-) -> Result<(String, String), String> {
+) -> Result<(Vec<u8>, String), String> {
     let (bytes, mimetype) = api.get_remote_image_bytes(url, timeout)?;
     let mimetype = mimetype
         .or_else(|| slack_preview_mimetype_from_url(url))
         .ok_or_else(|| {
             format!("failed to determine Slack attachment preview mimetype for {url}")
         })?;
-    Ok((base64::prelude::BASE64_STANDARD.encode(bytes), mimetype))
+    Ok((bytes, mimetype))
 }
 
 pub(in crate::live::payload) fn slack_attachment_from_file(

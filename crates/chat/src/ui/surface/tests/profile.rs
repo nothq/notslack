@@ -85,7 +85,7 @@ fn profile_slack_composer_render_loop(cx: &mut TestAppContext) {
     let message_count = 2_000usize;
     let frame_count = slack_profile_frame_count();
     let workspace =
-        slack_test_workspace_with_message_count("C_AICRAZE", "design", false, message_count);
+        slack_test_workspace_with_message_count("C_DESIGN", "design", false, message_count);
     let workspace = slack_test_board_with_workspace(workspace);
     let (surface, cx) = cx.add_window_view(|_, cx| slack_profile_surface_state(workspace, cx));
     cx.refresh().expect("refresh Slack composer profile window");
@@ -118,7 +118,7 @@ fn profile_slack_ambiguous_send_reconciliation_render_loop(cx: &mut TestAppConte
     let message_count = 2_000usize;
     let frame_count = slack_profile_frame_count();
     let workspace =
-        slack_test_workspace_with_message_count("C_AICRAZE", "design", false, message_count);
+        slack_test_workspace_with_message_count("C_DESIGN", "design", false, message_count);
     let sent_messages = Arc::new(Mutex::new(Vec::new()));
     let workspace_api: Arc<dyn SlackWorkspaceApi> = Arc::new(MockSlackWorkspaceApi {
         conversations: Arc::new(Mutex::new(HashMap::from([(
@@ -178,7 +178,7 @@ fn profile_slack_ambiguous_send_reconciliation_render_loop(cx: &mut TestAppConte
 fn profile_slack_scroll_loop(cx: &mut TestAppContext, capture_frames: bool) {
     let message_count = 2_000usize;
     let mut workspace =
-        slack_test_workspace_with_message_count("C_AICRAZE", "design", false, message_count);
+        slack_test_workspace_with_message_count("C_DESIGN", "design", false, message_count);
     seed_slack_profile_attachments(&mut workspace);
     let workspace = slack_test_board_with_workspace(workspace);
     let frame_count = slack_profile_frame_count();

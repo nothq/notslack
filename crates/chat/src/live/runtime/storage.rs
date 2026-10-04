@@ -159,7 +159,7 @@ impl SlackWorkspaceRuntime {
             .loader
             .load_attachment_preview_with_timeout(url, timeout)?
             .map(|preview| RemoteImageData {
-                base64: preview.base64,
+                bytes: preview.bytes,
                 mimetype: preview.mimetype,
             }))
     }

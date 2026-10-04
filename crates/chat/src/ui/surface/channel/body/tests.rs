@@ -84,7 +84,7 @@ fn slack_sticky_date_pill_pushes_before_next_divider() {
 }
 
 fn dated_rows() -> std::sync::Arc<[SlackMessageRow]> {
-    let mut workspace = slack_test_workspace_with_message_count("C_AICRAZE", "design", false, 3);
+    let mut workspace = slack_test_workspace_with_message_count("C_DESIGN", "design", false, 3);
     workspace.self_timezone_id = Some("UTC".to_string());
     workspace.messages[0].id = "1700000000.000000".to_string();
     workspace.messages[1].id = "1700000060.000000".to_string();

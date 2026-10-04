@@ -100,7 +100,9 @@ type SlackConversationDetailCache = Arc<Mutex<HashMap<String, CachedSlackConvers
 type SlackConversationDetailFetchLocks = Arc<Mutex<HashMap<String, Arc<Mutex<()>>>>>;
 type SlackDndStatusCache = Arc<Mutex<HashMap<String, CachedSlackDndStatus>>>;
 type SlackDndStatusFetchLocks = Arc<Mutex<HashMap<String, Arc<Mutex<()>>>>>;
-type SlackAttachmentPreviewCache = Arc<Mutex<HashMap<String, CachedSlackAttachmentPreview>>>;
+/// URLs whose preview failed to load, so they are not fetched again. Loaded
+/// previews are not kept here: the UI caches the decoded, downscaled image.
+type SlackAttachmentPreviewCache = Arc<Mutex<HashSet<String>>>;
 type SlackFileMetadataCache =
     Arc<Mutex<HashMap<SlackFileId, file_metadata::CachedSlackFileMetadata>>>;
 type SlackFileMetadataFetchLocks = Arc<Mutex<HashMap<SlackFileId, Arc<Mutex<()>>>>>;
@@ -227,12 +229,8 @@ enum SlackInitialHistoryPolicy {
 
 #[derive(Clone)]
 pub struct SlackAttachmentPreview {
-    pub base64: String,
+    pub bytes: Vec<u8>,
     pub mimetype: String,
-}
-
-pub(super) struct CachedSlackAttachmentPreview {
-    pub(super) preview: Option<SlackAttachmentPreview>,
 }
 
 fn ensure_reaction_mutation_reflected(

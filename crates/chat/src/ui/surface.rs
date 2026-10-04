@@ -9,7 +9,8 @@ use gpui_components::text_input::TextInput;
 
 use crate::ui::{
     alpha, build_slack_conversation_remote_images, build_slack_message_remote_images,
-    build_slack_remote_image_from_parts, build_slack_remote_images,
+    build_slack_remote_image_from_bytes, build_slack_remote_image_from_parts,
+    build_slack_remote_images,
     build_slack_shell_remote_images, build_slack_sidebar_remote_images, div, img,
     keystroke_input_text, list, point, px, relative, rgb, slack_remote_image_cache_key,
     spawn_background_task_for_entity, spawn_timer_task_for_entity, svg_from_body, svg_with_paths,

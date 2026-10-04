@@ -44,8 +44,11 @@ pub(crate) fn slack_legacy_attachment_file_image_cache_key(
 }
 
 pub(crate) fn build_slack_remote_image_from_parts(base64: &str, mime: &str) -> Option<Image> {
+    build_slack_remote_image_from_bytes(BASE64_STANDARD.decode(base64).ok()?, mime)
+}
+
+pub(crate) fn build_slack_remote_image_from_bytes(bytes: Vec<u8>, mime: &str) -> Option<Image> {
     let format = gpui_components::image_format_from_mime_type(mime)?;
-    let bytes = BASE64_STANDARD.decode(base64).ok()?;
     Some(downscale_slack_attachment_preview_image(format, bytes))
 }
 

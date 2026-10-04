@@ -186,7 +186,7 @@ fn slack_test_channel(index: usize, active_channel_id: &str) -> SlackSidebarItem
 }
 
 pub fn slack_test_board() -> SlackWorkspace {
-    slack_test_board_with_workspace(slack_test_workspace("C_AICRAZE", "design", false))
+    slack_test_board_with_workspace(slack_test_workspace("C_DESIGN", "design", false))
 }
 
 fn slack_test_message(index: usize, channel_name: &str) -> SlackMessage {
@@ -255,7 +255,7 @@ pub fn slack_test_channels_section(active_deploys: bool) -> SlackSidebarSection 
     SlackSidebarSection {
         label: "Channels".to_string(),
         items: vec![
-            slack_test_sidebar_item("design", "C_AICRAZE", !active_deploys, Some(3), true),
+            slack_test_sidebar_item("design", "C_DESIGN", !active_deploys, Some(3), true),
             slack_test_sidebar_item("deploys", "C_DEPLOYS", active_deploys, None, false),
         ],
     }

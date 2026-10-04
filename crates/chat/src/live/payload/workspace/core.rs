@@ -80,7 +80,7 @@ impl SlackLiveWorkspaceLoader {
             reaction_catalog_fetch_lock: Arc::new(Mutex::new(())),
             dnd_status_cache: Arc::new(Mutex::new(HashMap::new())),
             dnd_status_fetch_locks: Arc::new(Mutex::new(HashMap::new())),
-            attachment_preview_cache: Arc::new(Mutex::new(HashMap::new())),
+            attachment_preview_cache: Arc::new(Mutex::new(HashSet::new())),
             file_metadata_cache: Arc::new(Mutex::new(HashMap::new())),
             file_metadata_fetch_locks: Arc::new(Mutex::new(HashMap::new())),
             file_staging_ledger: super::file_staging::SlackFileStagingLedger::default(),

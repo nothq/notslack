@@ -67,7 +67,7 @@ fn verify_target_and_switch_back(app: &mut SlackTestApp, cx: &mut Context<SlackT
     assert!(app.root.slack_composer_text(cx).is_empty());
     assert!(app.root.slack_draft_attachments_empty(cx));
     assert!(app.root.slack_draft_upload_files_empty(cx));
-    app.root.select_conversation("C_AICRAZE", cx);
+    app.root.select_conversation("C_DESIGN", cx);
 }
 
 fn verify_restored_draft(app: &mut SlackTestApp, cx: &mut Context<SlackTestApp>) {
@@ -190,7 +190,7 @@ fn slack_rail_tabs_and_history_controls_update_state() {
     root.update(&mut cx, |app, cx| {
         assert_eq!(
             app.root.slack_conversation_id(cx).as_deref(),
-            Some("C_AICRAZE")
+            Some("C_DESIGN")
         );
         assert!(!app.root.can_navigate_slack_back(cx));
         app.root.navigate_slack_history_back(cx);

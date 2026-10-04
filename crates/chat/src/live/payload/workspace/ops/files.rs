@@ -13,7 +13,7 @@ use crate::live::{
         message::attachments::load_slack_attachment_preview,
         util::{slack_profile_from_user, string_at},
         workspace::{
-            CachedSlackAttachmentPreview, SlackAttachmentPreview, SlackAttachmentPreviewCache,
+            SlackAttachmentPreview, SlackAttachmentPreviewCache,
             SlackUserCache,
         },
     },
@@ -65,26 +65,20 @@ pub(in crate::live::payload::workspace) fn load_attachment_preview(
     url: &str,
     timeout: std::time::Duration,
 ) -> Result<Option<SlackAttachmentPreview>, String> {
-    if let Some(cached) = attachment_preview_cache
-        .lock()
-        .map_err(|_| "slack attachment preview cache mutex poisoned".to_string())?
-        .get(url)
-        .map(|cached| cached.preview.clone())
-    {
-        return Ok(cached);
+    let failed = || {
+        attachment_preview_cache
+            .lock()
+            .map_err(|_| "slack attachment preview cache mutex poisoned".to_string())
+    };
+    if failed()?.contains(url) {
+        return Ok(None);
     }
     let preview = load_slack_attachment_preview(api, url, timeout)
-        .map(|(base64, mimetype)| SlackAttachmentPreview { base64, mimetype })
+        .map(|(bytes, mimetype)| SlackAttachmentPreview { bytes, mimetype })
         .ok();
-    attachment_preview_cache
-        .lock()
-        .map_err(|_| "slack attachment preview cache mutex poisoned".to_string())?
-        .insert(
-            url.to_string(),
-            CachedSlackAttachmentPreview {
-                preview: preview.clone(),
-            },
-        );
+    if preview.is_none() {
+        failed()?.insert(url.to_string());
+    }
     Ok(preview)
 }
 

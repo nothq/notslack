@@ -15,13 +15,13 @@ use super::support::{
 fn more_unread_pill_requires_hidden_unread_row_above_viewport() {
     let workspace = slack_sidebar_test_workspace(SlackSidebarWorkspaceSpec {
         team_id: "TTEST".to_string(),
-        conversation_id: "C_AICRAZE".to_string(),
+        conversation_id: "C_DESIGN".to_string(),
         channel_kind: SlackConversationKind::Channel,
         channel_name: "design".to_string(),
         member_count: Some(8),
         sections: vec![slack_channel_section(vec![
             slack_sidebar_channel("standup", "C_DAILY", false, true, None),
-            slack_sidebar_channel("design", "C_AICRAZE", true, false, None),
+            slack_sidebar_channel("design", "C_DESIGN", true, false, None),
             slack_sidebar_channel("customer_success", "C_CUSTOMER", false, false, None),
         ])],
         composer_placeholder: "Message #design".to_string(),
@@ -39,12 +39,12 @@ fn more_unread_pill_requires_hidden_unread_row_above_viewport() {
 fn more_unread_pill_ignores_visible_and_active_unread_rows() {
     let workspace = slack_sidebar_test_workspace(SlackSidebarWorkspaceSpec {
         team_id: "TTEST".to_string(),
-        conversation_id: "C_AICRAZE".to_string(),
+        conversation_id: "C_DESIGN".to_string(),
         channel_kind: SlackConversationKind::Channel,
         channel_name: "design".to_string(),
         member_count: Some(8),
         sections: vec![slack_channel_section(vec![
-            slack_sidebar_channel("design", "C_AICRAZE", true, true, Some(2)),
+            slack_sidebar_channel("design", "C_DESIGN", true, true, Some(2)),
             slack_sidebar_channel("standup", "C_DAILY", false, false, None),
         ])],
         composer_placeholder: "Message #design".to_string(),
@@ -59,13 +59,13 @@ fn more_unread_pill_ignores_visible_and_active_unread_rows() {
 fn more_unreads_below_pill_requires_hidden_unread_row() {
     let workspace = slack_sidebar_test_workspace(SlackSidebarWorkspaceSpec {
         team_id: "TTEST".to_string(),
-        conversation_id: "C_AICRAZE".to_string(),
+        conversation_id: "C_DESIGN".to_string(),
         channel_kind: SlackConversationKind::Channel,
         channel_name: "design".to_string(),
         member_count: Some(8),
         sections: vec![
             slack_channel_section(vec![
-                slack_sidebar_channel("design", "C_AICRAZE", true, false, None),
+                slack_sidebar_channel("design", "C_DESIGN", true, false, None),
                 slack_sidebar_channel("customer_success", "C_CUSTOMER", false, true, Some(2)),
             ]),
             crate::ui::SlackSidebarSection {
@@ -96,13 +96,13 @@ fn more_unreads_below_pill_requires_hidden_unread_row() {
 fn more_unreads_below_pill_ignores_activity_count_without_hidden_unread_row() {
     let mut workspace = slack_sidebar_test_workspace(SlackSidebarWorkspaceSpec {
         team_id: "TTEST".to_string(),
-        conversation_id: "C_AICRAZE".to_string(),
+        conversation_id: "C_DESIGN".to_string(),
         channel_kind: SlackConversationKind::Channel,
         channel_name: "design".to_string(),
         member_count: Some(8),
         sections: vec![slack_channel_section(vec![slack_sidebar_channel(
             "design",
-            "C_AICRAZE",
+            "C_DESIGN",
             true,
             false,
             None,
@@ -119,12 +119,12 @@ fn more_unreads_below_pill_ignores_activity_count_without_hidden_unread_row() {
 fn more_unreads_below_pill_uses_unread_state_without_mention_count() {
     let workspace = slack_sidebar_test_workspace(SlackSidebarWorkspaceSpec {
         team_id: "TTEST".to_string(),
-        conversation_id: "C_AICRAZE".to_string(),
+        conversation_id: "C_DESIGN".to_string(),
         channel_kind: SlackConversationKind::Channel,
         channel_name: "design".to_string(),
         member_count: Some(8),
         sections: vec![slack_channel_section(vec![
-            slack_sidebar_channel("design", "C_AICRAZE", true, false, None),
+            slack_sidebar_channel("design", "C_DESIGN", true, false, None),
             slack_sidebar_channel("customer_success", "C_CUSTOMER", false, true, Some(0)),
             slack_sidebar_channel("random", "C_RANDOM", false, true, None),
         ])],

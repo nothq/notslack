@@ -11,7 +11,7 @@ fn normalize_slack_archive_fills_missing_ids_and_kinds() {
     let workspace = normalize_slack_archive(unnormalized_archive_workspace());
 
     assert_eq!(workspace.team_id, "T_ARCHIVE");
-    assert_eq!(workspace.conversation_id, "C_ARCHIVE_AI_CRAZE");
+    assert_eq!(workspace.conversation_id, "C_ARCHIVE_DESIGN");
     assert_eq!(workspace.channel_kind, SlackConversationKind::Channel);
     assert_eq!(workspace.composer_placeholder, "Message #design");
     assert_eq!(workspace.sections[0].items[0].target_id, "C_ARCHIVE_RANDOM");
