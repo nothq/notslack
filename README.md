@@ -8,7 +8,7 @@ Slack's desktop app is Electron: a full copy of Chromium plus a Node.js runtime,
 
 notslack draws the same interface natively. There is no browser, no JavaScript and no DOM. The UI is Rust rendered straight to the GPU through Metal, so it starts fast, scrolls smoothly and uses a fraction of the memory. It is built to be pixel perfect: the sidebar, message list, threads, composer, reactions and search match the Slack app you already know, so there is nothing to relearn.
 
-On a MacBook Pro with the same Slack workspaces signed in, Slack Desktop's eight processes had a combined memory footprint of about 1.16 GB, while notslack used 139 MB with the same workspace open. That is about an eighth of the memory, measured with macOS's `footprint` tool on 4 October 2026. Slack had been running for two days and notslack for about a minute, so the gap at equal uptime may be smaller.
+On a MacBook Pro with a 2560×1722 window and the same Slack workspaces signed in, Slack Desktop's eight processes had a combined memory footprint of about 1.16 GB, while notslack settled at about 165 MB, roughly a seventh. About 70 MB of that is the cost of any GPUI window at that size (mostly the GPU frame buffers). Measured with macOS's `footprint` tool on 4 October 2026; Slack had been running for two days and notslack for two minutes, so the gap at equal uptime may be smaller.
 
 It is early and there is a lot to do. If you have ever watched Slack eat your laptop's memory, come help.
 
