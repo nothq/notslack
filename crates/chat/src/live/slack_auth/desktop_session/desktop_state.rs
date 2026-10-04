@@ -48,7 +48,7 @@ impl fmt::Display for SlackDesktopRootStatePathError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ApplicationSupportUnavailable => {
-                formatter.write_str("failed to resolve the macOS application support directory")
+                formatter.write_str("failed to resolve the application data directory")
             }
             #[cfg(target_os = "macos")]
             Self::ApplicationSupportHasNoLibraryDirectory(path) => write!(
@@ -62,7 +62,7 @@ impl fmt::Display for SlackDesktopRootStatePathError {
                 path.display()
             ),
             Self::Missing => formatter.write_str(
-                "Slack Desktop workspace state was not found in either the standard or App Store sandbox location",
+                "Slack Desktop workspace state was not found; open Slack Desktop and sign in first",
             ),
             #[cfg(target_os = "macos")]
             Self::Ambiguous {
@@ -354,11 +354,50 @@ pub(super) fn slack_desktop_root_state_path() -> Result<PathBuf, SlackDesktopRoo
     }
 
     #[cfg(not(target_os = "macos"))]
-    if state_path_exists(&standard)? {
-        Ok(standard)
-    } else {
-        Err(SlackDesktopRootStatePathError::Missing)
+    newest_state_path(other_slack_root_state_paths(standard))
+}
+
+#[cfg(target_os = "windows")]
+fn other_slack_root_state_paths(standard: PathBuf) -> Vec<PathBuf> {
+    vec![standard]
+}
+
+/// Electron keeps Slack's data under ~/.config on Linux rather than the data
+/// directory, so look there, then in the Snap and Flatpak locations.
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn other_slack_root_state_paths(_standard: PathBuf) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    if let Some(config_dir) = dirs::config_dir() {
+        paths.push(config_dir.join("Slack/storage/root-state.json"));
     }
+    if let Some(home) = dirs::home_dir() {
+        paths.push(home.join("snap/slack/current/.config/Slack/storage/root-state.json"));
+        paths.push(home.join(".var/app/com.slack.Slack/config/Slack/storage/root-state.json"));
+    }
+    paths
+}
+
+/// Picks the most recently written state when Slack was installed more than once.
+#[cfg(not(target_os = "macos"))]
+fn newest_state_path(paths: Vec<PathBuf>) -> Result<PathBuf, SlackDesktopRootStatePathError> {
+    let mut newest: Option<(std::time::SystemTime, PathBuf)> = None;
+    for path in paths {
+        if !state_path_exists(&path)? {
+            continue;
+        }
+        let modified = fs::metadata(&path)
+            .and_then(|metadata| metadata.modified())
+            .map_err(|source| SlackDesktopRootStatePathError::InspectionFailed {
+                path: path.clone(),
+                source,
+            })?;
+        if newest.as_ref().is_none_or(|(time, _)| modified > *time) {
+            newest = Some((modified, path));
+        }
+    }
+    newest
+        .map(|(_, path)| path)
+        .ok_or(SlackDesktopRootStatePathError::Missing)
 }
 
 fn state_path_exists(path: &Path) -> Result<bool, SlackDesktopRootStatePathError> {
