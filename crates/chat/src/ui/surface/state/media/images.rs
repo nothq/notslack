@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use crate::ui::surface::{
-    build_slack_remote_image_from_parts, SlackAttachmentSelection, SlackMediaHostId, SurfaceState,
+    build_slack_remote_image_from_bytes, SlackAttachmentSelection, SlackMediaHostId, SurfaceState,
 };
 #[cfg(test)]
 use crate::ui::surface::{SlackAuxPanelRowAction, SlackAuxPanelSection, SlackAuxPanelState};
@@ -112,7 +112,7 @@ impl SurfaceState {
                 move |url| {
                     workspace_api.load_slack_remote_image(&url).map(|image| {
                         image.and_then(|image| {
-                            build_slack_remote_image_from_parts(&image.base64, &image.mimetype)
+                            build_slack_remote_image_from_bytes(image.bytes, &image.mimetype)
                                 .map(Arc::new)
                         })
                     })

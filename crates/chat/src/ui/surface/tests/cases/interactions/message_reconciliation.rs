@@ -38,7 +38,7 @@ fn slack_accepted_send_error_reconciles_without_retrying() {
         assert_slack_hi_loaded(app, cx);
     });
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }
 
 #[gpui::test]
@@ -67,7 +67,7 @@ fn slack_accepted_send_with_invalid_receipt_reconciles_without_retrying() {
         assert_slack_hi_loaded(app, cx);
     });
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }
 
 #[gpui::test]
@@ -115,7 +115,7 @@ fn slack_accepted_send_error_reconciles_after_an_older_refresh_finishes() {
         assert_slack_hi_loaded(app, cx);
     });
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }
 
 #[gpui::test]
@@ -156,7 +156,7 @@ fn slack_accepted_send_error_preserves_a_newer_draft() {
             .any(|message| message.body == "Hi"));
     });
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }
 
 #[gpui::test]
@@ -198,9 +198,9 @@ fn slack_retry_reuses_client_message_id_until_the_draft_changes() {
     assert_eq!(
         slack_send_payloads(&sent),
         [
-            ("C_AICRAZE", "Hi"),
-            ("C_AICRAZE", "Hi"),
-            ("C_AICRAZE", "Hi!")
+            ("C_DESIGN", "Hi"),
+            ("C_DESIGN", "Hi"),
+            ("C_DESIGN", "Hi!")
         ]
     );
     assert_eq!(sent[0].client_message_id, sent[1].client_message_id);

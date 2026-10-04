@@ -5,7 +5,7 @@ fn slack_preview_images_are_cached_on_workspace_load() {
     let _guard = acquire_headless_test_lock();
     let mut cx = headless_test_context();
     let (api, _) = slack_test_api();
-    let mut workspace = slack_test_workspace("C_AICRAZE", "design", false);
+    let mut workspace = slack_test_workspace("C_DESIGN", "design", false);
     workspace.workspace_logo_url = Some("https://files.slack.com/workspace-logo.png".to_string());
     workspace.messages[0].avatar_image_url =
         Some("https://files.slack.com/profile-image.png".to_string());
@@ -38,16 +38,18 @@ fn slack_remote_images_load_on_initial_render() {
     let logo_url = "https://files.slack.com/workspace-logo.png".to_string();
     let avatar_url = "https://files.slack.com/profile-image.png".to_string();
     let remote_image = RemoteImageData {
-        base64:
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jc1EAAAAASUVORK5CYII="
-                .to_string(),
+        bytes: base64::Engine::decode(
+            &base64::prelude::BASE64_STANDARD,
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jc1EAAAAASUVORK5CYII=",
+            )
+            .unwrap(),
         mimetype: "image/png".to_string(),
     };
     let (api, _) = slack_test_api_with_remote_images(HashMap::from([
         (logo_url.clone(), remote_image.clone()),
         (avatar_url.clone(), remote_image),
     ]));
-    let mut workspace = slack_test_workspace("C_AICRAZE", "design", false);
+    let mut workspace = slack_test_workspace("C_DESIGN", "design", false);
     workspace.workspace_logo_url = Some(logo_url);
     workspace.messages[0].avatar_image_url = Some(avatar_url);
 
@@ -76,14 +78,16 @@ fn slack_visible_attachment_preview_images_prefetch_on_initial_render() {
     let mut cx = headless_test_context();
     let preview_url = "https://files.slack.com/attachment-preview.png".to_string();
     let remote_image = RemoteImageData {
-        base64:
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jc1EAAAAASUVORK5CYII="
-                .to_string(),
+        bytes: base64::Engine::decode(
+            &base64::prelude::BASE64_STANDARD,
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jc1EAAAAASUVORK5CYII=",
+            )
+            .unwrap(),
         mimetype: "image/png".to_string(),
     };
     let (api, _) =
         slack_test_api_with_remote_images(HashMap::from([(preview_url.clone(), remote_image)]));
-    let mut workspace = slack_test_workspace("C_AICRAZE", "design", false);
+    let mut workspace = slack_test_workspace("C_DESIGN", "design", false);
     workspace.messages[0].attachments = vec![SlackAttachment {
         title: "notslack profile run preview".to_string(),
         source: Default::default(),
@@ -123,14 +127,16 @@ fn slack_bottom_attachment_preview_images_prefetch_on_initial_render() {
     let mut cx = headless_test_context();
     let preview_url = "https://files.slack.com/bottom-attachment-preview.png".to_string();
     let remote_image = RemoteImageData {
-        base64:
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jc1EAAAAASUVORK5CYII="
-                .to_string(),
+        bytes: base64::Engine::decode(
+            &base64::prelude::BASE64_STANDARD,
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jc1EAAAAASUVORK5CYII=",
+            )
+            .unwrap(),
         mimetype: "image/png".to_string(),
     };
     let (api, _) =
         slack_test_api_with_remote_images(HashMap::from([(preview_url.clone(), remote_image)]));
-    let mut workspace = slack_test_workspace_with_message_count("C_AICRAZE", "design", false, 16);
+    let mut workspace = slack_test_workspace_with_message_count("C_DESIGN", "design", false, 16);
     workspace.messages[14].attachments = vec![SlackAttachment {
         title: "Visible bottom preview".to_string(),
         source: Default::default(),
@@ -169,7 +175,7 @@ fn slack_large_preview_images_are_downscaled_on_workspace_load() {
     let _guard = acquire_headless_test_lock();
     let mut cx = headless_test_context();
     let (api, _) = slack_test_api();
-    let mut workspace = slack_test_workspace("C_AICRAZE", "design", false);
+    let mut workspace = slack_test_workspace("C_DESIGN", "design", false);
     let mut encoded = Vec::new();
     let preview = image::RgbImage::from_pixel(3558, 2304, image::Rgb([0x2a, 0x2d, 0x30]));
     image::codecs::jpeg::JpegEncoder::new_with_quality(&mut encoded, 80)

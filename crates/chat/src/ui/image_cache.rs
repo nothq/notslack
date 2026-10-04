@@ -17,7 +17,8 @@ mod remote_images;
 
 pub(crate) use remote_images::{
     build_slack_conversation_remote_images, build_slack_message_remote_images,
-    build_slack_remote_image_from_parts, build_slack_remote_images,
+    build_slack_remote_image_from_bytes, build_slack_remote_image_from_parts,
+    build_slack_remote_images,
     build_slack_shell_remote_images, build_slack_sidebar_remote_images,
     slack_legacy_attachment_file_image_cache_key, slack_remote_image_cache_key,
 };

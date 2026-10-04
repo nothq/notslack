@@ -95,8 +95,8 @@ pub fn slack_test_api_with_conversations(
 fn slack_test_conversations() -> HashMap<String, SlackWorkspace> {
     HashMap::from([
         (
-            "C_AICRAZE".to_string(),
-            slack_test_workspace("C_AICRAZE", "design", false),
+            "C_DESIGN".to_string(),
+            slack_test_workspace("C_DESIGN", "design", false),
         ),
         (
             "C_DEPLOYS".to_string(),
@@ -150,8 +150,8 @@ pub fn slow_slack_test_api(load_delay: std::time::Duration) -> SlowSlackTestApi 
     let api = MockSlackWorkspaceApi {
         conversations: Arc::new(Mutex::new(HashMap::from([
             (
-                "C_AICRAZE".to_string(),
-                slack_test_workspace("C_AICRAZE", "design", false),
+                "C_DESIGN".to_string(),
+                slack_test_workspace("C_DESIGN", "design", false),
             ),
             (
                 "C_DEPLOYS".to_string(),

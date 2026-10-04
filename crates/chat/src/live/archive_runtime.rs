@@ -213,7 +213,7 @@ impl crate::model::SlackWorkspaceApi for SlackArchiveWorkspaceRuntime {
         Ok(preview
             .ok()
             .map(|preview| remote_image_model::RemoteImageData {
-                base64: preview.base64,
+                bytes: preview.bytes,
                 mimetype: preview.mimetype,
             }))
     }

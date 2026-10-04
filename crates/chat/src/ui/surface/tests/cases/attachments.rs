@@ -27,7 +27,7 @@ fn open_slack_attachment_action_window(
 }
 
 fn slack_attachment_action_workspace() -> SlackWorkspace {
-    let mut workspace = slack_test_workspace("C_AICRAZE", "design", false);
+    let mut workspace = slack_test_workspace("C_DESIGN", "design", false);
     workspace.messages[0].attachments = vec![SlackAttachment {
         title: "Screen Recording 2026-04-04 at 1.39.16 PM.mov".to_string(),
         source: Default::default(),
@@ -64,7 +64,7 @@ fn assert_slack_attachment_and_external_actions(
     assert_slack_attachment_action_state(app, &attachment, cx);
 
     app.root
-        .open_slack_external_connection("Frances Allen", "Foodhub", cx);
+        .open_slack_external_connection("Frances Allen", "Northwind", cx);
     let search_action = app
         .root
         .slack_aux_panel(cx)

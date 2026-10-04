@@ -1,6 +1,6 @@
 #[derive(Clone, Debug)]
 pub struct RemoteImageData {
-    pub base64: String,
+    pub bytes: Vec<u8>,
     pub mimetype: String,
 }
 

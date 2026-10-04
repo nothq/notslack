@@ -256,7 +256,7 @@ mod tests {
     #[gpui::test]
     fn appended_refresh_reuses_rows_and_marks_the_first_unread_message() {
         let mut existing =
-            slack_test_workspace_with_message_count("C_AICRAZE", "design", false, 2)
+            slack_test_workspace_with_message_count("C_DESIGN", "design", false, 2)
                 .conversation_snapshot();
         existing.last_read = Some(
             crate::ui::SlackLastReadTimestamp::parse("1700000000.000002")
@@ -304,7 +304,7 @@ mod tests {
     #[gpui::test]
     fn appended_refresh_rebuilds_rows_after_local_date_rollover() {
         let mut existing =
-            slack_test_workspace_with_message_count("C_AICRAZE", "design", false, 1)
+            slack_test_workspace_with_message_count("C_DESIGN", "design", false, 1)
                 .conversation_snapshot();
         let existing_client_message_id = crate::ui::SlackMessageClientId::generate();
         existing.messages[0].client_message_id = Some(existing_client_message_id.clone());

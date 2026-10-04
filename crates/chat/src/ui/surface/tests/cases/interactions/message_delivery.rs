@@ -35,7 +35,7 @@ fn slack_enter_sends_message_and_reloads_workspace() {
         .lock()
         .expect("sent messages mutex poisoned")
         .clone();
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
     root.update(&mut cx, assert_slack_hi_loaded);
 }
 
@@ -67,14 +67,14 @@ fn slack_switch_during_send_clears_only_the_submitted_draft() {
             app.root.slack_conversation_id(cx).as_deref(),
             Some("C_DEPLOYS")
         );
-        app.root.select_conversation("C_AICRAZE", cx);
+        app.root.select_conversation("C_DESIGN", cx);
     });
     cx.run_until_parked();
 
     root.update(&mut cx, |app, cx| {
         assert_eq!(
             app.root.slack_conversation_id(cx).as_deref(),
-            Some("C_AICRAZE")
+            Some("C_DESIGN")
         );
         assert!(app.root.slack_composer_text(cx).is_empty());
         assert!(app
@@ -86,7 +86,7 @@ fn slack_switch_during_send_clears_only_the_submitted_draft() {
             .any(|message| message.body == "Hi"));
     });
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }
 
 #[gpui::test]
@@ -125,7 +125,7 @@ fn slack_edit_during_send_preserves_the_newer_draft() {
             .any(|message| message.body == "Hi"));
     });
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }
 
 #[gpui::test]
@@ -152,7 +152,7 @@ fn slack_switch_during_failed_send_restores_the_draft_and_error() {
     cx.run_until_parked();
 
     root.update(&mut cx, |app, cx| {
-        app.root.select_conversation("C_AICRAZE", cx);
+        app.root.select_conversation("C_DESIGN", cx);
     });
     cx.run_until_parked();
 
@@ -184,7 +184,7 @@ fn slack_new_message_send_clears_the_exact_stored_draft_after_leaving() {
         .expect("failed to access Slack New Message send test root");
     root.update(&mut cx, |app, cx| {
         app.root
-            .enter_test_slack_new_message_target("conversation:C_AICRAZE", cx);
+            .enter_test_slack_new_message_target("conversation:C_DESIGN", cx);
         send_slack_hi_with_enter(app, cx);
         app.root.leave_test_slack_new_message_target(cx);
     });
@@ -192,7 +192,7 @@ fn slack_new_message_send_clears_the_exact_stored_draft_after_leaving() {
 
     root.update(&mut cx, |app, cx| {
         app.root
-            .enter_test_slack_new_message_target("conversation:C_AICRAZE", cx);
+            .enter_test_slack_new_message_target("conversation:C_DESIGN", cx);
         assert!(app.root.slack_composer_text(cx).is_empty());
         assert!(app
             .root
@@ -203,7 +203,7 @@ fn slack_new_message_send_clears_the_exact_stored_draft_after_leaving() {
             .any(|message| message.body == "Hi"));
     });
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }
 
 #[gpui::test]
@@ -230,5 +230,5 @@ fn slack_pending_send_in_another_conversation_does_not_block_delivery() {
     cx.run_until_parked();
 
     let sent = sent_messages.lock().expect("sent messages mutex poisoned");
-    assert_eq!(slack_send_payloads(&sent), [("C_AICRAZE", "Hi")]);
+    assert_eq!(slack_send_payloads(&sent), [("C_DESIGN", "Hi")]);
 }

@@ -5,7 +5,7 @@ use crate::model::{
 pub(super) fn sidebar_activity_workspace() -> SlackWorkspace {
     SlackWorkspace {
         team_id: "TTEST".to_string(),
-        conversation_id: "C_ARCHIVE_AI_CRAZE".to_string(),
+        conversation_id: "C_ARCHIVE_DESIGN".to_string(),
         channel_kind: SlackConversationKind::Channel,
         workspace_name: "Acme".to_string(),
         workspace_logo_url: None,
@@ -26,7 +26,7 @@ pub(super) fn sidebar_activity_workspace() -> SlackWorkspace {
         sections: vec![slack_sidebar_section(
             "Channels",
             vec![
-                slack_sidebar_channel_item("design", "C_ARCHIVE_AI_CRAZE", false),
+                slack_sidebar_channel_item("design", "C_ARCHIVE_DESIGN", false),
                 slack_sidebar_channel_item("random", "C_ARCHIVE_RANDOM", true),
             ],
         )],
@@ -49,7 +49,7 @@ pub(super) fn sidebar_activity_workspace() -> SlackWorkspace {
 pub(super) fn archived_runtime_test_workspace() -> SlackWorkspace {
     SlackWorkspace {
         team_id: "T_ARCHIVE".to_string(),
-        conversation_id: "C_ARCHIVE_AI_CRAZE".to_string(),
+        conversation_id: "C_ARCHIVE_DESIGN".to_string(),
         channel_kind: SlackConversationKind::Channel,
         workspace_name: "Acme".to_string(),
         workspace_logo_url: None,
@@ -79,7 +79,7 @@ pub(super) fn archived_runtime_test_workspace() -> SlackWorkspace {
                 ),
                 archived_runtime_test_sidebar_item(
                     "design",
-                    "C_ARCHIVE_AI_CRAZE",
+                    "C_ARCHIVE_DESIGN",
                     true,
                     true,
                     Some(1),

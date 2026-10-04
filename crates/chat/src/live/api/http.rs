@@ -1,6 +1,5 @@
 use std::{io::Read, time::Duration};
 
-use base64::prelude::{Engine as _, BASE64_STANDARD};
 use reqwest::{blocking::Client, redirect::Policy};
 use serde_json::Value;
 
@@ -34,14 +33,14 @@ fn slack_authenticated_host(host: Option<&str>) -> bool {
         || host.ends_with(".slack-imgs.com")
 }
 
-pub(crate) fn load_remote_image(url: &str, timeout: Duration) -> Result<(String, String), String> {
+pub(crate) fn load_remote_image(url: &str, timeout: Duration) -> Result<(Vec<u8>, String), String> {
     let api = SlackApiClient::public()?;
     let (bytes, content_type) = api.get_remote_image_bytes(url, timeout)?;
     let mimetype = content_type
         .filter(|value| value.starts_with("image/"))
         .or_else(|| slack_remote_image_mimetype_from_url(url))
         .ok_or_else(|| format!("failed to determine remote image mimetype for {url}"))?;
-    Ok((BASE64_STANDARD.encode(bytes), mimetype))
+    Ok((bytes, mimetype))
 }
 
 pub(super) fn slack_api_payload_from_response(

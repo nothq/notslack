@@ -153,7 +153,7 @@ fn empty_direct_messages_sort_by_presence_then_label() {
             (
                 "D2",
                 "U2",
-                "Margaret User",
+                "Alice User",
                 boot::SlackDirectMessagePresence::Active,
             ),
             (
@@ -184,7 +184,7 @@ fn empty_direct_messages_sort_by_presence_then_label() {
     assert!(items[0].user_id.is_none());
     assert!(items[0].avatar_image_url.is_none());
     assert_eq!(items[1].id, "D2");
-    assert_eq!(items[1].label, "Margaret User");
+    assert_eq!(items[1].label, "Alice User");
     assert_eq!(items[1].user_id.as_deref(), Some("U2"));
     assert_eq!(items[2].id, "D3");
     assert_eq!(items[3].id, "D1");
