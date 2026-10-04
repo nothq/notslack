@@ -84,13 +84,32 @@ package_macos() {
 </plist>
 PLIST
 
-    # Ad-hoc signature: Apple Silicon refuses to run unsigned code at all.
-    codesign --force --sign - "$app"/Contents/Frameworks/*.dylib
-    codesign --force --sign - "$app"
+    # With MACOS_SIGNING_IDENTITY (a Developer ID Application identity in the
+    # keychain) the app is signed for distribution with the hardened runtime.
+    # Without it, an ad-hoc signature: Apple Silicon refuses unsigned code.
+    local identity=${MACOS_SIGNING_IDENTITY:--}
+    local sign_flags=(--force --sign "$identity")
+    if [ "$identity" != - ]; then
+        sign_flags+=(--options runtime --timestamp)
+    fi
+    codesign "${sign_flags[@]}" "$app"/Contents/Frameworks/*.dylib
+    codesign "${sign_flags[@]}" --entitlements script/notslack.entitlements "$app"
     codesign --verify --strict --verbose=2 "$app"
 
     ln -s /Applications "$stage/dmg/Applications"
     hdiutil create -volname notslack -srcfolder "$stage/dmg" -ov -format UDZO "$dist/$name.dmg"
+
+    if [ "$identity" != - ]; then
+        codesign --force --timestamp --sign "$identity" "$dist/$name.dmg"
+    fi
+    # Notarize with an App Store Connect API key, then staple the ticket so the
+    # app opens without a Gatekeeper warning, even offline.
+    if [ "$identity" != - ] && [ -n "${APPLE_API_KEY_PATH:-}" ]; then
+        xcrun notarytool submit "$dist/$name.dmg" --wait \
+            --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID"
+        xcrun stapler staple "$dist/$name.dmg"
+        spctl --assess --type open --context context:primary-signature --verbose=2 "$dist/$name.dmg"
+    fi
 }
 
 package_linux() {
