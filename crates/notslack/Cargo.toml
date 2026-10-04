@@ -1,0 +1,16 @@
+[package]
+name = "notslack"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+app_model = { package = "notslack-app-model", path = "../app/model" }
+chat = { package = "notslack-chat", path = "../chat" }
+gpui.workspace = true
+gpui_platform.workspace = true
+media_capture = { package = "notslack-media-capture", path = "../media/capture" }
+theme.workspace = true
+
+[lints]
+workspace = true

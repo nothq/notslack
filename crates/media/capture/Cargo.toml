@@ -1,0 +1,19 @@
+[package]
+name = "notslack-media-capture"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "media_capture"
+
+[dependencies]
+cpal = "0.15"
+hound = "3.5"
+rtrb = "0.3"
+tempfile.workspace = true
+thiserror.workspace = true
+video_native = { package = "notslack-video-native", path = "../../video/native" }
+
+[lints]
+workspace = true
