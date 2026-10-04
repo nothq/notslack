@@ -11,6 +11,7 @@ on:
       - .github/workflows/release.yml
       - script/build-ffmpeg
       - script/package
+      - script/notslack.entitlements
       - rust-toolchain.toml
   workflow_dispatch:
 
@@ -105,6 +106,45 @@ jobs:
 
       - name: Build
         run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Set up Developer ID signing (macOS)
+        if: runner.os == 'macOS'
+        env:
+          CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          if [ -z "$CERTIFICATE_P12" ]; then
+            echo "No Developer ID certificate in the repository secrets; the app gets an ad-hoc signature."
+            exit 0
+          fi
+          keychain=$RUNNER_TEMP/signing.keychain-db
+          password=$(openssl rand -hex 16)
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$CERTIFICATE_P12" | base64 --decode >"$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity=$(security find-identity -v -p codesigning "$keychain" |
+            sed -n 's/.*"\(Developer ID Application: .*\)"$/\1/p' | head -n 1)
+          if [ -z "$identity" ]; then
+            echo "The certificate holds no Developer ID Application identity" >&2
+            exit 1
+          fi
+          echo "MACOS_SIGNING_IDENTITY=$identity" >>"$GITHUB_ENV"
+          if [ -n "$API_KEY_P8" ]; then
+            printf '%s\n' "$API_KEY_P8" >"$RUNNER_TEMP/notary-key.p8"
+            {
+              echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/notary-key.p8"
+              echo "APPLE_API_KEY_ID=$API_KEY_ID"
+              echo "APPLE_API_ISSUER_ID=$API_ISSUER_ID"
+            } >>"$GITHUB_ENV"
+          fi
 
       - name: Package
         run: script/package ${{ matrix.target }} ffmpeg
