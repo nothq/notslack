@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 use super::SLACK_DESKTOP_CONNECT_UNSUPPORTED;
 use super::{
     authenticated_runtime_input, capture_slack_desktop_credentials_from, confirm_stored_slack_team,
@@ -271,7 +271,7 @@ fn recovery_labels_are_typed() {
     assert_eq!(SlackDesktopRecovery::Reconnect.label(), "Reconnect Slack");
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 #[test]
 fn macos_unavailable_recovery_matrix_is_explicit() {
     let cases = [
@@ -314,9 +314,9 @@ fn macos_unavailable_recovery_matrix_is_explicit() {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
-fn non_macos_unavailable_states_never_offer_desktop_capture() {
+fn unsupported_platform_unavailable_states_never_offer_desktop_capture() {
     let reasons = [
         SlackDesktopIntegrationUnavailable::UnsupportedPlatform,
         SlackDesktopIntegrationUnavailable::NativeAppNotInstalled,
@@ -335,9 +335,9 @@ fn non_macos_unavailable_states_never_offer_desktop_capture() {
     }
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 #[test]
-fn explicit_desktop_capture_invokes_capture_boundary_on_macos() {
+fn explicit_desktop_capture_invokes_capture_boundary_on_supported_platforms() {
     let capture_called = Cell::new(false);
     let result = with_supported_slack_desktop_capture(|| {
         capture_called.set(true);
@@ -348,7 +348,7 @@ fn explicit_desktop_capture_invokes_capture_boundary_on_macos() {
     assert!(capture_called.get());
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
 fn explicit_desktop_capture_rejects_platform_without_invoking_capture() {
     let capture_called = Cell::new(false);
@@ -356,7 +356,7 @@ fn explicit_desktop_capture_rejects_platform_without_invoking_capture() {
         capture_called.set(true);
         Ok("captured")
     })
-    .expect_err("non-macOS Slack Desktop capture must be unavailable");
+    .expect_err("unsupported-platform Slack Desktop capture must be unavailable");
 
     assert_eq!(error, SLACK_DESKTOP_CONNECT_UNSUPPORTED);
     assert!(!capture_called.get());

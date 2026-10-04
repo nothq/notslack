@@ -29,7 +29,11 @@ pub(super) enum SlackDesktopCaptureSupport {
 
 impl SlackDesktopCaptureSupport {
     const fn current() -> Self {
-        if cfg!(target_os = "macos") {
+        if cfg!(any(
+            target_os = "macos",
+            target_os = "windows",
+            target_os = "linux"
+        )) {
             Self::Supported
         } else {
             Self::Unsupported
@@ -45,9 +49,9 @@ impl SlackDesktopCaptureSupport {
 }
 
 pub(super) fn desktop_app_runtime_registry() -> SlackWorkspaceRuntimeRegistry {
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
     let desktop_app_status = crate::live::check_slack_desktop_app();
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     let desktop_app_status = Ok(());
 
     desktop_app_runtime_registry_from(
