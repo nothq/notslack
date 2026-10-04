@@ -11,6 +11,10 @@ pub fn default_cache_root_dir(
         return Ok(PathBuf::from(path));
     }
 
+    #[cfg(target_os = "windows")]
+    if let Some(path) = std::env::var_os("LOCALAPPDATA") {
+        return Ok(PathBuf::from(path).join("dev.nothq.notslack").join(app_subdir));
+    }
     let home = std::env::var_os("HOME")
         .map(PathBuf::from)
         .ok_or_else(|| format!("HOME was not set for notslack {description} cache"))?;
