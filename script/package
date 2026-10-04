@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Packages a release build for download, with the FFmpeg libraries inside:
+# a .dmg holding notslack.app on macOS, a tarball on Linux, a zip on Windows.
+#
+# Usage: script/package TARGET FFMPEG_DIR
+#   TARGET      the Rust target triple built with `cargo build --release --target`
+#   FFMPEG_DIR  the prefix from script/build-ffmpeg, or the unpacked Windows build
+# Writes dist/notslack-<platform>.<dmg|tar.gz|zip>.
+set -euo pipefail
+
+target=$1
+ffmpeg=$(cd "$2" && pwd)
+version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
+bin=target/$target/release
+ffmpeg_libs=(avcodec avdevice avfilter avformat avutil swresample swscale)
+
+case "$target" in
+    aarch64-apple-darwin) platform=macos-arm64 ;;
+    x86_64-apple-darwin) platform=macos-x86_64 ;;
+    x86_64-unknown-linux-gnu) platform=linux-x86_64 ;;
+    x86_64-pc-windows-msvc) platform=windows-x86_64 ;;
+    *)
+        echo "script/package: unsupported target $target" >&2
+        exit 1
+        ;;
+esac
+
+name=notslack-$platform
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+mkdir -p dist
+dist=$(cd dist && pwd)
+
+package_macos() {
+    local app=$stage/dmg/notslack.app
+    mkdir -p "$app/Contents/MacOS" "$app/Contents/Frameworks"
+    cp "$bin/notslack" "$app/Contents/MacOS/notslack"
+    strip -x "$app/Contents/MacOS/notslack"
+
+    # The binary and the libraries refer to each other as @rpath/<name>.
+    otool -L "$app/Contents/MacOS/notslack" | sed -n 's|^[[:space:]]*@rpath/\([^ ]*\).*|\1|p' |
+        while read -r lib; do
+            cp -L "$ffmpeg/lib/$lib" "$app/Contents/Frameworks/$lib"
+            chmod 644 "$app/Contents/Frameworks/$lib"
+        done
+    install_name_tool -add_rpath @executable_path/../Frameworks "$app/Contents/MacOS/notslack"
+
+    cat >"$app/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>notslack</string>
+    <key>CFBundleExecutable</key>
+    <string>notslack</string>
+    <key>CFBundleIdentifier</key>
+    <string>dev.nothq.notslack</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>notslack</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$version</string>
+    <key>CFBundleVersion</key>
+    <string>$version</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.business</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>${MACOSX_DEPLOYMENT_TARGET:-11.0}</string>
+    <key>NSCameraUsageDescription</key>
+    <string>notslack records video clips for your messages.</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>notslack records audio and video clips for your messages.</string>
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
+</dict>
+</plist>
+PLIST
+
+    # Ad-hoc signature: Apple Silicon refuses to run unsigned code at all.
+    codesign --force --sign - "$app"/Contents/Frameworks/*.dylib
+    codesign --force --sign - "$app"
+    codesign --verify --strict --verbose=2 "$app"
+
+    ln -s /Applications "$stage/dmg/Applications"
+    hdiutil create -volname notslack -srcfolder "$stage/dmg" -ov -format UDZO "$dist/$name.dmg"
+}
+
+package_linux() {
+    local dir=$stage/$name
+    mkdir -p "$dir/lib"
+    cp "$bin/notslack" "$dir/notslack"
+    strip "$dir/notslack"
+    for lib in "${ffmpeg_libs[@]}"; do
+        local file soname
+        file=$(readlink -f "$ffmpeg/lib/lib$lib.so")
+        soname=$(readelf -d "$file" | sed -n 's/.*(SONAME).*\[\(.*\)\]/\1/p')
+        cp "$file" "$dir/lib/$soname"
+        patchelf --set-rpath '$ORIGIN' "$dir/lib/$soname"
+    done
+    patchelf --set-rpath '$ORIGIN/lib' "$dir/notslack"
+    cp LICENSE "$dir/"
+    tar -czf "$dist/$name.tar.gz" -C "$stage" "$name"
+}
+
+package_windows() {
+    local dir=$stage/$name
+    mkdir -p "$dir"
+    cp "$bin/notslack.exe" "$dir/"
+    for lib in "${ffmpeg_libs[@]}"; do
+        cp "$ffmpeg"/bin/"$lib"-*.dll "$dir/"
+    done
+    cp LICENSE "$dir/LICENSE.txt"
+    (cd "$stage" && 7z a -tzip -mx=9 "$dist/$name.zip" "$name" >/dev/null)
+}
+
+case "$platform" in
+    macos-*) package_macos ;;
+    linux-*) package_linux ;;
+    windows-*) package_windows ;;
+esac
+
+ls -l "$dist"

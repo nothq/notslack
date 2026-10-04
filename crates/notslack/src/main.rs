@@ -1,3 +1,6 @@
+// Release builds on Windows are GUI apps: no console window behind notslack.
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+
 use std::{borrow::Cow, sync::Arc};
 
 use app_model::{AppearanceMode, SurfaceFrame, SurfaceRoot as _, SurfaceTheme, Viewport};
@@ -22,7 +25,7 @@ fn main() {
         theme::init(theme::LoadThemes::JustBase, cx);
         cx.set_global(appearance_mode(cx.window_appearance()));
         cx.on_action(|_: &Quit, cx| cx.quit());
-        cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
+        cx.bind_keys([KeyBinding::new("secondary-q", Quit, None)]);
         cx.set_menus([Menu::new("notslack").items([MenuItem::action("Quit notslack", Quit)])]);
         cx.on_window_closed(|cx, _| cx.quit()).detach();
 

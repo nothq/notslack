@@ -38,9 +38,9 @@ pub use self::types::SlackWebBuildTimestamp;
 const SLACK_DESKTOP_SESSION_CACHE_KEY: &str = "slack|desktop-session";
 const SLACK_DESKTOP_SESSIONS_V2_CACHE_KEY: &str = "slack|desktop-sessions-v2";
 const SLACK_DESKTOP_SESSIONS_CACHE_KEY: &str = "slack|desktop-sessions-v3";
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 const SLACK_DESKTOP_CONNECT_UNSUPPORTED: &str =
-    "Connecting Slack Desktop is supported only on macOS";
+    "Connecting Slack Desktop is supported only on macOS, Windows and Linux";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SlackLiveLaunchContext {
@@ -99,7 +99,7 @@ pub enum SlackDesktopIntegrationStatus {
     Unavailable(SlackDesktopIntegrationUnavailable),
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 pub fn check_slack_desktop_app() -> Result<(), SlackDesktopIntegrationUnavailable> {
     desktop_session::check_slack_desktop_app()
 }
@@ -127,11 +127,11 @@ pub(in crate::live) fn parse_cached_slack_desktop_sessions_for_test(
 fn with_supported_slack_desktop_capture<T>(
     _capture: impl FnOnce() -> Result<T, String>,
 ) -> Result<T, String> {
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
     {
         _capture()
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     {
         Err(SLACK_DESKTOP_CONNECT_UNSUPPORTED.to_string())
     }

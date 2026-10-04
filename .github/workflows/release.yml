@@ -1,0 +1,138 @@
+name: Release
+
+# Builds notslack for macOS, Linux and Windows. A version tag (v0.1.0) publishes
+# the builds as a GitHub Release; manual runs and pull requests that touch the
+# packaging keep them as workflow artifacts instead.
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - script/build-ffmpeg
+      - script/package
+      - rust-toolchain.toml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # Windows FFmpeg: BtbN's LGPL shared build of the same FFmpeg release.
+  WINDOWS_FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-win64-lgpl-shared-8.1.zip
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-arm64
+            os: macos-15
+            target: aarch64-apple-darwin
+          - platform: macos-x86_64
+            os: macos-15-intel
+            target: x86_64-apple-darwin
+          - platform: linux-x86_64
+            # The oldest supported runner, so the binary runs on older glibc.
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - platform: windows-x86_64
+            os: windows-2022
+            target: x86_64-pc-windows-msvc
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Install build tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install nasm pkg-config
+
+      - name: Install build tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm pkg-config patchelf clang \
+            libasound2-dev libfontconfig-dev libfreetype-dev libvulkan-dev \
+            libwayland-dev libx11-xcb-dev libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev
+
+      - name: Cache FFmpeg
+        if: runner.os != 'Windows'
+        id: ffmpeg-cache
+        uses: actions/cache@v4
+        with:
+          path: ffmpeg
+          key: ffmpeg-${{ matrix.target }}-${{ env.MACOSX_DEPLOYMENT_TARGET }}-${{ hashFiles('script/build-ffmpeg') }}
+
+      - name: Build FFmpeg
+        if: runner.os != 'Windows' && steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        run: script/build-ffmpeg ffmpeg
+
+      - name: Download FFmpeg (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          curl -fsSL -o ffmpeg.zip "$WINDOWS_FFMPEG_URL"
+          7z x -offmpeg-download ffmpeg.zip >/dev/null
+          mv ffmpeg-download/*/ ffmpeg
+
+      - name: Point the build at FFmpeg
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            dir=$(cygpath -w "$PWD/ffmpeg")
+            {
+              echo "FFMPEG_INCLUDE_DIR=$dir\\include"
+              echo "FFMPEG_LIBS_DIR=$dir\\lib"
+              echo "FFMPEG_LINK_MODE=dynamic"
+              echo "LIBCLANG_PATH=C:\\Program Files\\LLVM\\bin"
+            } >>"$GITHUB_ENV"
+          else
+            echo "PKG_CONFIG_PATH=$PWD/ffmpeg/lib/pkgconfig" >>"$GITHUB_ENV"
+          fi
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package
+        run: script/package ${{ matrix.target }} ffmpeg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notslack-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "notslack $GITHUB_REF_NAME" \
+            --generate-notes

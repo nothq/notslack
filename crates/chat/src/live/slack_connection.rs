@@ -1,11 +1,11 @@
 use super::SlackDesktopIntegrationUnavailable;
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 pub const SLACK_DESKTOP_CONNECTION_DISCLOSURE: &str =
     "Connecting will quit and relaunch Slack Desktop. notslack will not restart automatically.";
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 pub const SLACK_DESKTOP_CONNECTION_DISCLOSURE: &str =
-    "Connecting Slack Desktop is supported only on macOS.";
+    "Connecting Slack Desktop is supported only on macOS, Windows and Linux.";
 pub const SLACK_DESKTOP_CONNECTION_SUCCESS: &str =
     "Slack credentials were saved. Restart notslack to use Chat.";
 
@@ -26,7 +26,7 @@ impl SlackDesktopRecovery {
 
 impl SlackDesktopIntegrationUnavailable {
     pub const fn recovery(&self) -> Option<SlackDesktopRecovery> {
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
         {
             match self {
                 Self::NoCachedSession | Self::NoWorkspace => Some(SlackDesktopRecovery::Connect),
@@ -36,7 +36,7 @@ impl SlackDesktopIntegrationUnavailable {
                 }
             }
         }
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
         {
             let _ = self;
             None

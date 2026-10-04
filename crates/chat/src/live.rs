@@ -31,7 +31,7 @@ pub use runtime_registry::{
     SlackHostEvent, SlackHostEventStream, SlackHostRuntime, SlackNotificationReadReceipt,
     SlackNotificationReplyRequest,
 };
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 pub use slack_auth::check_slack_desktop_app;
 pub use slack_auth::{
     authenticated_slack_teams, capture_slack_desktop_credentials, connect_slack_desktop,

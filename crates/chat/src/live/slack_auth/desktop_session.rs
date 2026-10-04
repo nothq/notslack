@@ -1,9 +1,6 @@
 use std::{
     collections::BTreeMap,
-    fs, io,
     net::TcpListener,
-    path::PathBuf,
-    process::{Command, Stdio},
     thread,
     time::{Duration, Instant},
 };
@@ -14,16 +11,16 @@ use serde::Deserialize;
 use super::types::{
     StoredSlackDesktopSession, StoredSlackDesktopSessionRecord, StoredSlackDesktopSessions,
 };
-#[cfg(target_os = "macos")]
 use super::SlackDesktopIntegrationUnavailable;
 use crate::live::{SlackApiClient, SlackWebSessionCredentials};
 
 mod cdp;
+mod desktop_app;
 mod desktop_state;
 
-const SLACK_BUNDLE_PATH: &str = "/Applications/Slack.app";
+use desktop_app::{installed_slack_app_path, relaunch_slack_with_debugging, SlackDesktopAppError};
+
 const SLACK_BROWSER_WAIT: Duration = Duration::from_secs(60);
-const SLACK_QUIT_WAIT: Duration = Duration::from_secs(5);
 
 pub(crate) fn capture_slack_desktop_sessions() -> Result<StoredSlackDesktopSessions, String> {
     let directory = desktop_state::load_slack_desktop_workspace_directory()?;
@@ -83,7 +80,6 @@ pub(crate) fn capture_slack_desktop_sessions() -> Result<StoredSlackDesktopSessi
     StoredSlackDesktopSessions::new(ordered_team_ids, selected_team_id, sessions_by_team_id)
 }
 
-#[cfg(target_os = "macos")]
 pub(super) fn check_slack_desktop_app() -> Result<(), SlackDesktopIntegrationUnavailable> {
     match installed_slack_app_path() {
         Ok(_) => Ok(()),
@@ -191,138 +187,6 @@ fn available_local_port() -> Result<u16, String> {
         .map_err(|error| format!("failed to read Slack Desktop inspector port: {error}"))
 }
 
-fn relaunch_slack_with_debugging(port: u16) -> Result<(), String> {
-    let app_path = installed_slack_app_path().map_err(|error| error.to_string())?;
-    quit_slack_desktop();
-    thread::sleep(Duration::from_millis(1200));
-    let status = Command::new("open")
-        .arg("-na")
-        .arg(&app_path)
-        .arg("--args")
-        .arg(format!("--remote-debugging-port={port}"))
-        .arg("--remote-debugging-address=127.0.0.1")
-        .status()
-        .map_err(|error| format!("failed to launch Slack Desktop: {error}"))?;
-    if status.success() {
-        open_slack_desktop_window();
-        return Ok(());
-    }
-    Err(format!(
-        "failed to launch Slack Desktop with status {status}"
-    ))
-}
-
-#[derive(Debug)]
-enum SlackDesktopAppError {
-    NotInstalled,
-    HomeUnavailable,
-    InspectionFailed { path: PathBuf, source: io::Error },
-    InvalidBundle(PathBuf),
-}
-
-impl std::fmt::Display for SlackDesktopAppError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NotInstalled => formatter.write_str(&slack_app_missing_message()),
-            Self::HomeUnavailable => {
-                formatter.write_str("failed to resolve the home directory for Slack Desktop")
-            }
-            Self::InspectionFailed { path, source } => write!(
-                formatter,
-                "failed to inspect Slack Desktop application {}: {source}",
-                path.display()
-            ),
-            Self::InvalidBundle(path) => write!(
-                formatter,
-                "Slack Desktop application {} is not a valid application bundle",
-                path.display()
-            ),
-        }
-    }
-}
-
-fn installed_slack_app_path() -> Result<PathBuf, SlackDesktopAppError> {
-    let system_path = PathBuf::from(SLACK_BUNDLE_PATH);
-    if let Some(path) = inspect_slack_app_bundle(system_path)? {
-        return Ok(path);
-    }
-    let home_path = std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .ok_or(SlackDesktopAppError::HomeUnavailable)?;
-    let user_path = home_path.join("Applications/Slack.app");
-    inspect_slack_app_bundle(user_path)?.ok_or(SlackDesktopAppError::NotInstalled)
-}
-
-fn inspect_slack_app_bundle(path: PathBuf) -> Result<Option<PathBuf>, SlackDesktopAppError> {
-    let metadata = match fs::metadata(&path) {
-        Ok(metadata) => metadata,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
-        Err(source) => return Err(SlackDesktopAppError::InspectionFailed { path, source }),
-    };
-    if !metadata.is_dir() {
-        return Err(SlackDesktopAppError::InvalidBundle(path));
-    }
-    let info_path = path.join("Contents/Info.plist");
-    let info_metadata = fs::metadata(&info_path).map_err(|source| {
-        if source.kind() == io::ErrorKind::NotFound {
-            SlackDesktopAppError::InvalidBundle(path.clone())
-        } else {
-            SlackDesktopAppError::InspectionFailed {
-                path: info_path,
-                source,
-            }
-        }
-    })?;
-    if !info_metadata.is_file() {
-        return Err(SlackDesktopAppError::InvalidBundle(path));
-    }
-    Ok(Some(path))
-}
-
-fn quit_slack_desktop() {
-    force_quit_slack_desktop();
-    let _ = wait_for_slack_exit(SLACK_QUIT_WAIT);
-}
-
-fn wait_for_slack_exit(timeout: Duration) -> bool {
-    let deadline = Instant::now() + timeout;
-    loop {
-        if !slack_process_running() {
-            return true;
-        }
-        if Instant::now() >= deadline {
-            return false;
-        }
-        thread::sleep(Duration::from_millis(250));
-    }
-}
-
-fn slack_process_running() -> bool {
-    Command::new("pgrep")
-        .arg("-x")
-        .arg("Slack")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .is_ok_and(|status| status.success())
-}
-
-fn force_quit_slack_desktop() {
-    let _ = Command::new("killall")
-        .arg("Slack")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-}
-
-fn open_slack_desktop_window() {
-    let _ = Command::new("open")
-        .arg("slack://")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-}
-
 fn slack_app_target_priority(target: &CdpTarget) -> Option<u8> {
     if target.kind != "page" || target.web_socket_url.is_none() {
         return None;
@@ -336,10 +200,6 @@ fn slack_app_target_priority(target: &CdpTarget) -> Option<u8> {
     } else {
         1
     })
-}
-
-fn slack_app_missing_message() -> String {
-    "Slack Desktop is required to import Slack web session credentials automatically".to_string()
 }
 
 fn slack_target_timeout_message(port: u16) -> String {
