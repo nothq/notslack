@@ -118,7 +118,8 @@ impl SlackInternalSidebarClient {
             params.push(("cursor", cursor.to_string()));
         }
         let body = self.post_internal_method(CLIENT_DMS, params)?;
-        let response = decode_response::<SlackClientDmsResponse>(CLIENT_DMS, &body)?;
+        let response = decode_response::<SlackClientDmsResponse>(CLIENT_DMS, &body)?
+            .with_combined_dms_sorted();
         let item_count = response.ims.len().saturating_add(response.mpims.len());
         if item_count > DMS_PAGE_SIZE {
             return Err(format!(

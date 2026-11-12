@@ -36,8 +36,34 @@ pub(super) struct SlackClientDmsResponse {
     pub(super) ims: Vec<SlackClientDm>,
     #[serde(default)]
     pub(super) mpims: Vec<SlackClientDm>,
+    /// Some sessions get one combined list in place of `ims` and `mpims`.
+    #[serde(default)]
+    dms: Vec<SlackClientDm>,
     #[serde(default)]
     pub(super) response_metadata: SlackResponseMetadata,
+}
+
+impl SlackClientDmsResponse {
+    /// Sorts the combined `dms` list into `ims` and `mpims`, skipping any
+    /// conversation Slack also listed there.
+    pub(super) fn with_combined_dms_sorted(mut self) -> Self {
+        for dm in std::mem::take(&mut self.dms) {
+            let listed = self
+                .ims
+                .iter()
+                .chain(self.mpims.iter())
+                .any(|known| known.id == dm.id);
+            if listed {
+                continue;
+            }
+            if dm.channel.is_mpim {
+                self.mpims.push(dm);
+            } else {
+                self.ims.push(dm);
+            }
+        }
+        self
+    }
 }
 
 impl SlackInternalResponse for SlackClientDmsResponse {
@@ -301,4 +327,36 @@ pub(super) fn slack_timestamp_sort_key(timestamp: &str) -> u128 {
 pub(super) fn non_empty(value: String) -> Option<String> {
     let value = value.trim().to_string();
     (!value.is_empty()).then_some(value)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const DM: &str = r#"{"id":"D1","latest":"1.000001","message":{"user":"U1"},"channel":{"id":"D1","is_im":true,"user":"U1"}}"#;
+    const GROUP_DM: &str = r#"{"id":"C2","latest":"2.000001","message":{"user":"U2"},"channel":{"id":"C2","is_mpim":true,"members":["U0","U1","U2"]}}"#;
+
+    fn ids(dms: &[SlackClientDm]) -> Vec<&str> {
+        dms.iter().map(|dm| dm.id.as_str()).collect()
+    }
+
+    #[test]
+    fn a_combined_dms_list_is_sorted_into_ims_and_mpims() {
+        let body = format!(r#"{{"ok":true,"dms":[{DM},{GROUP_DM}],"ims":[],"mpims":[]}}"#);
+        let response = decode_response::<SlackClientDmsResponse>("client.dms", &body)
+            .expect("combined client.dms response should decode")
+            .with_combined_dms_sorted();
+        assert_eq!(ids(&response.ims), ["D1"]);
+        assert_eq!(ids(&response.mpims), ["C2"]);
+    }
+
+    #[test]
+    fn a_conversation_listed_both_ways_appears_once() {
+        let body = format!(r#"{{"ok":true,"dms":[{DM},{GROUP_DM}],"ims":[{DM}],"mpims":[]}}"#);
+        let response = decode_response::<SlackClientDmsResponse>("client.dms", &body)
+            .expect("mixed client.dms response should decode")
+            .with_combined_dms_sorted();
+        assert_eq!(ids(&response.ims), ["D1"]);
+        assert_eq!(ids(&response.mpims), ["C2"]);
+    }
 }
