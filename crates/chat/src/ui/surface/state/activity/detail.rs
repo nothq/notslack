@@ -6,11 +6,11 @@ use super::super::main_composer::{
 };
 use super::{
     collect_slack_activity_detail_row_urls, find_activity_anchor_index, load_slack_activity_detail,
-    next_slack_activity_generation, px, slack_activity_thread_detail_rows, Arc, Context,
-    ListOffset, PreparedSlackActivityDetail, PreparedSlackConversationSnapshot,
-    PreparedSlackThreadSnapshot, SharedString, SlackActivityDetailInstallation,
-    SlackActivityDetailRequest, SlackActivityDetailState, SlackActivityDetailTarget,
-    SlackActivityRow, SlackMessageRow, SlackMessageTimestamp, SlackRailView, SurfaceState,
+    next_slack_activity_generation, px, slack_activity_thread_detail_rows, Context, ListOffset,
+    PreparedSlackActivityDetail, PreparedSlackConversationSnapshot, PreparedSlackThreadSnapshot,
+    SharedString, SlackActivityDetailInstallation, SlackActivityDetailRequest,
+    SlackActivityDetailState, SlackActivityDetailTarget, SlackActivityRow, SlackMessageRow,
+    SlackMessageTimestamp, SlackRailView, SurfaceState,
     SLACK_ACTIVITY_DETAIL_IMAGE_VISIBLE_OVERDRAW, SLACK_ACTIVITY_INITIAL_VISIBLE_ROWS,
 };
 
@@ -135,16 +135,10 @@ impl SurfaceState {
         if self.slack_conversation_id() != Some(row.channel_id.as_ref()) {
             return false;
         }
-        if let Some(thread_timestamp) = row.thread_timestamp.as_ref() {
-            let Some(rows) = slack_activity_thread_detail_rows(
-                &self.slack_message_rows,
-                thread_timestamp,
-                &row.message_timestamp,
-            ) else {
-                return false;
-            };
-            self.finish_current_slack_activity_thread_detail(row.clone(), rows, cx);
-            return true;
+        // The open conversation holds a thread's parent, not its replies, so
+        // a thread is always loaded.
+        if row.thread_timestamp.is_some() {
+            return false;
         }
         if find_activity_anchor_index(&self.slack_message_rows, &row.message_timestamp).is_none() {
             return false;
@@ -220,52 +214,6 @@ impl SurfaceState {
                 target,
                 rows,
                 anchor_index,
-            },
-            cx,
-        );
-    }
-
-    fn finish_current_slack_activity_thread_detail(
-        &mut self,
-        row: SlackActivityRow,
-        rows: Arc<[SlackMessageRow]>,
-        cx: &mut Context<Self>,
-    ) {
-        let channel_label = row
-            .channel_label
-            .clone()
-            .or_else(|| {
-                self.slack_workspace()
-                    .map(|workspace| workspace.channel_name.clone().into())
-            })
-            .expect("loaded Slack conversation must provide a channel label");
-        let (team_id, self_user_id) = self
-            .slack_workspace()
-            .map(|workspace| (workspace.team_id.clone(), workspace.self_user_id.clone()))
-            .expect("loaded Slack Activity thread requires its workspace");
-        let self_user_id = self_user_id
-            .clone()
-            .expect("loaded Slack Activity thread requires an authenticated user");
-        let thread_timestamp = row
-            .thread_timestamp
-            .clone()
-            .expect("loaded Slack Activity thread requires its parent timestamp");
-        let item_key = row.key.clone();
-        let conversation_id = row.channel_id.to_string();
-        self.install_slack_activity_detail(
-            SlackActivityDetailInstallation {
-                key: row.key,
-                channel_label,
-                message_timestamp: row.message_timestamp,
-                target: SlackActivityDetailTarget::Thread {
-                    team_id,
-                    self_user_id,
-                    conversation_id,
-                    item_key,
-                    thread_timestamp,
-                },
-                rows,
-                anchor_index: 1,
             },
             cx,
         );

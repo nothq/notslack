@@ -2,15 +2,15 @@ use std::{collections::HashSet, sync::Arc};
 
 use super::{
     collect_slack_activity_detail_row_urls, find_activity_anchor_index, px,
-    slack_activity_conversation_composer_context, Context, ListOffset,
-    PreparedSlackConversationSnapshot, PreparedSlackThreadSnapshot, SharedString,
+    slack_activity_conversation_composer_context, slack_activity_thread_detail_rows, Context,
+    ListOffset, PreparedSlackConversationSnapshot, PreparedSlackThreadSnapshot, SharedString,
     SlackActivityDetailInstallation, SlackActivityDetailRequest, SlackActivityDetailState,
     SlackActivityDetailTarget, SlackActivityRow, SlackMessageRow, SlackMessageTimestamp,
     SurfaceState, SLACK_ACTIVITY_DETAIL_IMAGE_VISIBLE_OVERDRAW,
     SLACK_ACTIVITY_INITIAL_VISIBLE_ROWS,
 };
 
-type SlackActivityThreadRowsResult = Result<Arc<[SlackMessageRow]>, &'static str>;
+type SlackActivityThreadRowsResult = Result<(Arc<[SlackMessageRow]>, usize), &'static str>;
 
 impl SurfaceState {
     pub(super) fn apply_loaded_slack_activity_conversation_detail(
@@ -79,7 +79,7 @@ impl SurfaceState {
         cx: &mut Context<Self>,
     ) {
         let installation = prepare_loaded_slack_activity_thread_detail(&request, &mut prepared)
-            .map(|rows| {
+            .map(|(rows, anchor_index)| {
                 let channel_label = request
                     .channel_label
                     .clone()
@@ -99,7 +99,7 @@ impl SurfaceState {
                             .expect("validated activity thread must retain its parent timestamp"),
                     },
                     rows,
-                    anchor_index: 1,
+                    anchor_index,
                 }
             });
         match installation {
@@ -209,22 +209,15 @@ fn prepare_loaded_slack_activity_thread_detail(
     prepared: &mut PreparedSlackThreadSnapshot,
 ) -> SlackActivityThreadRowsResult {
     let thread_timestamp = validate_slack_activity_thread_detail(request, prepared)?;
-    let mut parent = prepared
+    let parent = prepared
         .parent_row
         .take()
         .ok_or("Slack omitted the requested activity thread parent.")?;
     if parent.id != thread_timestamp.as_str() {
         return Err("Slack returned a different parent for this activity thread.");
     }
-    let mut reply = prepared
-        .reply_rows
-        .iter()
-        .find(|reply| reply.id == request.message_timestamp.as_str())
-        .cloned()
-        .ok_or("Slack omitted the requested activity thread reply.")?;
-    parent.replies.clear();
-    reply.replies.clear();
-    Ok(vec![parent, reply].into())
+    slack_activity_thread_detail_rows(parent, &prepared.reply_rows, &request.message_timestamp)
+        .ok_or("Slack omitted the requested activity thread reply.")
 }
 
 fn validate_slack_activity_thread_detail<'a>(
