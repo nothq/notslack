@@ -204,6 +204,7 @@ fn slack_message_author(
         .and_then(Value::as_str)
         .map(str::to_string)
         .or_else(|| user.and_then(slack_user_display_name))
+        .or_else(|| string_at(message, &["bot_profile", "name"]))
         .unwrap_or_else(|| "Slack".to_string())
 }
 

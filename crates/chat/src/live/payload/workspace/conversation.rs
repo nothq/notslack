@@ -95,7 +95,8 @@ impl SlackLiveWorkspaceLoader {
         conversation_id: &str,
         cursor: &SlackConversationHistoryCursor,
     ) -> Result<SlackConversationHistoryPage, String> {
-        let history = self.load_conversation_history_page_payload(conversation_id, cursor)?;
+        let mut history = self.load_conversation_history_page_payload(conversation_id, cursor)?;
+        self.fill_history_bot_profiles(&mut history);
         slack_conversation_history_next_cursor(&history, Some(cursor))?;
         let users = load_slack_conversation_history_users_with_cache(
             &self.api,
@@ -142,13 +143,14 @@ impl SlackLiveWorkspaceLoader {
     ) -> Result<SlackConversationSnapshot, String> {
         let total_started_at = Instant::now();
         let api_call_counts_before = self.workspace_load_api_counts()?;
-        let ((channel_info, history_window), core_payloads_elapsed) = timed(|| {
+        let ((channel_info, mut history_window), core_payloads_elapsed) = timed(|| {
             self.load_conversation_history_window(
                 conversation_id,
                 anchor_timestamp,
                 initial_history_policy,
             )
         })?;
+        self.fill_history_bot_profiles(&mut history_window.history);
         let history_page_refs = history_window.source_pages.iter().collect::<Vec<_>>();
         let (users, users_elapsed) = timed(|| {
             load_slack_conversation_history_window_users_with_cache(

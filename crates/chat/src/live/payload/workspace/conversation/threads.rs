@@ -54,7 +54,8 @@ impl SlackLiveWorkspaceLoader {
                     .map_err(|_| "Slack conversations.info request thread panicked".to_string()),
             )
         });
-        let replies = replies_result??;
+        let mut replies = replies_result??;
+        self.fill_history_bot_profiles(&mut replies);
         let channel_info = channel_info_result??;
         let users = load_slack_conversation_users_with_cache(
             &self.api,
@@ -109,7 +110,8 @@ impl SlackLiveWorkspaceLoader {
                     .map_err(|_| "Slack conversations.info request thread panicked".to_string()),
             )
         });
-        let replies = replies_result??;
+        let mut replies = replies_result??;
+        self.fill_history_bot_profiles(&mut replies);
         let channel_info = channel_info_result??;
         let users = load_slack_conversation_users_with_cache(
             &self.api,

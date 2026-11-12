@@ -127,6 +127,10 @@ impl SlackMessagesListHydration {
         self.messages.values()
     }
 
+    pub(crate) fn values_mut(&mut self) -> impl Iterator<Item = &mut Value> {
+        self.messages.values_mut()
+    }
+
     pub(crate) fn take(&mut self, reference: &SlackMessageReference) -> Result<Value, String> {
         let remaining_consumers = self
             .remaining_consumers

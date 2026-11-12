@@ -30,6 +30,7 @@ use crate::live::{
 mod actions;
 mod all_threads;
 mod bookmark_folder;
+mod bots;
 mod build;
 mod channel_details;
 mod conversation;
