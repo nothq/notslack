@@ -1,3 +1,4 @@
+mod realtime;
 mod sidebar_state;
 
 use std::collections::HashSet;

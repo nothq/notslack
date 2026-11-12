@@ -102,6 +102,7 @@ impl SurfaceState {
         self.reset_slack_realtime_sidebar_refresh();
         self.slack_realtime_conversation_refresh_pending = false;
         self.slack_realtime_thread_refresh_pending = false;
+        self.slack_realtime_dm_inbox_stale = false;
         self.slack_realtime_activity_stale = false;
         self.slack_realtime_later_stale = false;
         self.slack_realtime_files_stale = false;
@@ -125,6 +126,7 @@ impl SurfaceState {
         if self.slack_realtime_thread_refresh_pending {
             self.queue_slack_thread_realtime_refresh(cx);
         }
+        self.refresh_slack_dm_inbox_from_realtime(cx);
         self.refresh_slack_activity_from_realtime_if_visible(cx);
         self.refresh_slack_later_from_realtime_if_visible(cx);
         self.refresh_slack_files_from_realtime_if_visible(cx);
@@ -184,6 +186,7 @@ impl SurfaceState {
         if batch.full_resync || self.slack_realtime_thread_changed(batch.threads.as_slice()) {
             self.slack_realtime_thread_refresh_pending = true;
         }
+        self.note_slack_realtime_dm_changes(batch.full_resync, &batch.conversation_ids);
         self.slack_realtime_activity_stale |= batch.full_resync || batch.activity_changed;
         self.slack_realtime_later_stale |= batch.full_resync || batch.later_changed;
         self.slack_realtime_files_stale |= batch.full_resync || batch.files_changed;
@@ -195,6 +198,7 @@ impl SurfaceState {
         self.slack_realtime_conversation_refresh_pending = true;
         self.request_slack_realtime_sidebar_refresh();
         self.slack_realtime_thread_refresh_pending = self.slack_thread_panel.is_some();
+        self.slack_realtime_dm_inbox_stale = true;
         self.slack_realtime_activity_stale = true;
         self.slack_realtime_later_stale = true;
         self.slack_realtime_files_stale = true;

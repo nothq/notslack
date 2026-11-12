@@ -31,6 +31,8 @@ pub struct SlackWorkspaceViewsData {
     pub(crate) slack_dm_visible_row_indices: Arc<[usize]>,
     pub(crate) slack_dm_list_state: SlackListState,
     pub(crate) slack_dm_pagination_cursor: Option<String>,
+    pub(crate) slack_realtime_dm_inbox_stale: bool,
+    pub(crate) slack_dm_inbox_refresh_in_flight: bool,
     pub(crate) slack_dm_finder_query: String,
     pub(crate) slack_dm_finder_normalized_query: gpui::SharedString,
     pub(crate) slack_dm_finder_focused: bool,
