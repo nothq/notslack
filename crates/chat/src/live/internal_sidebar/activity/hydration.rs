@@ -119,7 +119,7 @@ fn activity_thread(
 
 fn activity_at_user(
     reference: SlackMessageReference,
-    author_user_id: String,
+    author_user_id: Option<String>,
     broadcast: bool,
     expected_thread_timestamp: Option<SlackMessageTimestamp>,
     context: &mut SlackActivityHydrationContext<'_>,
@@ -132,7 +132,10 @@ fn activity_at_user(
         ActivityThreadRootExpectation::Exact(expected_thread_timestamp.as_ref()),
         context,
     )?;
-    if message.user_id.as_deref() != Some(author_user_id.as_str()) {
+    if let Some(author_user_id) = author_user_id
+        .as_deref()
+        .filter(|author_user_id| message.user_id.as_deref() != Some(*author_user_id))
+    {
         return Err(format!(
             "Slack Activity mention author {author_user_id} did not match hydrated message author {:?}",
             message.user_id.as_deref(),

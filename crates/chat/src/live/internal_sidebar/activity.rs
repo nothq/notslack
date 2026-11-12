@@ -94,7 +94,7 @@ enum SlackActivityFeedContent {
     },
     AtUser {
         reference: SlackMessageReference,
-        author_user_id: String,
+        author_user_id: Option<String>,
         broadcast: bool,
         thread_timestamp: Option<SlackMessageTimestamp>,
     },

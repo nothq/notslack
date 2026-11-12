@@ -92,7 +92,7 @@ struct SlackActivityWireItem {
     feed_ts: String,
     is_archived: bool,
     is_unread: bool,
-    item: SlackActivityWireContent,
+    item: serde_json::Value,
     key: String,
     version: String,
     is_bot: Option<bool>,
@@ -109,36 +109,25 @@ impl TryFrom<SlackActivityWireItem> for SlackActivityFeedItem {
             archived: item.is_archived,
             unread: item.is_unread,
             bot: item.is_bot,
-            content: SlackActivityFeedContent::try_from(item.item)?,
+            content: activity_content(item.item)?,
         })
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum SlackActivityWireContent {
-    Known(SlackActivityKnownWireContent),
-    Unsupported(SlackActivityUnsupportedWireContent),
-}
-
-impl TryFrom<SlackActivityWireContent> for SlackActivityFeedContent {
-    type Error = String;
-
-    fn try_from(content: SlackActivityWireContent) -> Result<Self, Self::Error> {
-        match content {
-            SlackActivityWireContent::Known(content) => content.try_into(),
-            SlackActivityWireContent::Unsupported(content)
-                if is_observed_activity_type(&content.kind) =>
-            {
-                Err(format!(
-                    "Slack {ACTIVITY_FEED} returned malformed {} item",
-                    content.kind
-                ))
-            }
-            SlackActivityWireContent::Unsupported(content) => {
-                Ok(Self::Unsupported { kind: content.kind })
-            }
-        }
+/// Decodes one feed item. A type notslack renders must match its expected
+/// shape; any other type is kept as unsupported.
+fn activity_content(item: serde_json::Value) -> Result<SlackActivityFeedContent, String> {
+    let kind = item
+        .get("type")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| format!("Slack {ACTIVITY_FEED} returned an item without a type"))?
+        .to_string();
+    match serde_json::from_value::<SlackActivityKnownWireContent>(item) {
+        Ok(content) => content.try_into(),
+        Err(error) if is_observed_activity_type(&kind) => Err(format!(
+            "Slack {ACTIVITY_FEED} returned malformed {kind} item: {error}"
+        )),
+        Err(_) => Ok(SlackActivityFeedContent::Unsupported { kind }),
     }
 }
 
@@ -147,12 +136,6 @@ fn is_observed_activity_type(kind: &str) -> bool {
         kind,
         "message_reaction" | "thread_v2" | "at_user" | "dm" | "bot_dm_bundle"
     )
-}
-
-#[derive(Debug, Deserialize)]
-struct SlackActivityUnsupportedWireContent {
-    #[serde(rename = "type")]
-    kind: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -277,7 +260,8 @@ struct SlackActivityThreadEntry {
 
 #[derive(Debug, Deserialize)]
 struct SlackActivityMentionMessage {
-    author_user_id: String,
+    /// Absent when the mention has no user author, such as one posted by an app.
+    author_user_id: Option<String>,
     channel: String,
     is_broadcast: bool,
     ts: String,
@@ -320,4 +304,51 @@ struct SlackActivityBotDmPayload {
 struct SlackActivityBotDmMessage {
     channel: String,
     ts: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn feed_item(item: &str) -> Result<SlackActivityFeedContent, String> {
+        let body = format!(
+            r#"{{"ok":true,"activity_views_date_updated":"1","response_metadata":{{"next_cursor":""}},"items":[{{"feed_ts":"1700000000.000100","is_archived":false,"is_unread":true,"key":"k","version":"1","item":{item}}}]}}"#
+        );
+        decode_activity_feed(&body).map(|mut page| page.items.remove(0).content)
+    }
+
+    #[test]
+    fn a_mention_without_an_author_decodes() {
+        let content = feed_item(
+            r#"{"type":"at_user","message":{"channel":"C0123456789","is_broadcast":false,"ts":"1700000000.000100"}}"#,
+        );
+        assert!(matches!(
+            content,
+            Ok(SlackActivityFeedContent::AtUser {
+                author_user_id: None,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn a_malformed_supported_item_says_what_is_wrong() {
+        let error = match feed_item(r#"{"type":"at_user","message":{"channel":"C0123456789"}}"#) {
+            Err(error) => error,
+            Ok(_) => panic!("an incomplete at_user item should not decode"),
+        };
+        assert!(
+            error.contains("malformed at_user item") && error.contains("is_broadcast"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn an_unknown_item_type_is_kept_as_unsupported() {
+        let content = feed_item(r#"{"type":"something_new","payload":{}}"#);
+        assert!(matches!(
+            content,
+            Ok(SlackActivityFeedContent::Unsupported { kind }) if kind == "something_new"
+        ));
+    }
 }
