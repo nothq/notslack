@@ -77,8 +77,7 @@ impl std::fmt::Display for SlackDesktopIntegrationUnavailable {
                 formatter.write_str("Slack Desktop integration is unsupported on this platform")
             }
             Self::NativeAppNotInstalled => formatter.write_str("Slack Desktop is not installed"),
-            Self::NoCachedSession => formatter
-                .write_str("Slack Desktop is installed, but Slack is not connected to notslack"),
+            Self::NoCachedSession => formatter.write_str("Slack is not connected to notslack"),
             Self::NoWorkspace => formatter.write_str("Slack Desktop has no signed-in workspace"),
             Self::CachedSessionError(message) => {
                 write!(
@@ -102,6 +101,13 @@ pub enum SlackDesktopIntegrationStatus {
 #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 pub fn check_slack_desktop_app() -> Result<(), SlackDesktopIntegrationUnavailable> {
     desktop_session::check_slack_desktop_app()
+}
+
+/// Whether Connect Slack signs in through a browser because Slack Desktop is
+/// not installed.
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
+pub(in crate::live) fn connects_through_browser() -> bool {
+    desktop_session::connects_through_browser()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]

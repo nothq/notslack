@@ -48,7 +48,7 @@ pub(super) fn relaunch_slack_with_debugging(port: u16) -> Result<(), String> {
     launch_slack_with_debugging(&app_path, port)
 }
 
-fn debugging_args(port: u16) -> [String; 2] {
+pub(super) fn debugging_args(port: u16) -> [String; 2] {
     [
         format!("--remote-debugging-port={port}"),
         "--remote-debugging-address=127.0.0.1".to_string(),

@@ -34,7 +34,7 @@ fs2 = "0.4"
 futures-util = "0.3"
 getrandom = "0.3"
 gpui = { git = "https://github.com/zed-industries/zed", rev = "552fc9f3c3c775276c2ce3f0fb93f1f4c2c18ba6" }
-gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "552fc9f3c3c775276c2ce3f0fb93f1f4c2c18ba6", features = ["font-kit", "x11"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "552fc9f3c3c775276c2ce3f0fb93f1f4c2c18ba6", features = ["font-kit", "wayland", "x11"] }
 iana-time-zone = "0.1"
 image = "0.25.10"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "cookies", "gzip", "json", "multipart", "rustls-tls", "stream", "zstd"] }

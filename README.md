@@ -11,12 +11,13 @@ notslack is a native Slack client written in Rust on [GPUI](https://www.gpui.rs)
 | macOS, Apple Silicon | [notslack-macos-arm64.dmg](https://github.com/nothq/notslack/releases/latest/download/notslack-macos-arm64.dmg) |
 | macOS, Intel | [notslack-macos-x86_64.dmg](https://github.com/nothq/notslack/releases/latest/download/notslack-macos-x86_64.dmg) |
 | Linux, x86_64 | [notslack-linux-x86_64.tar.gz](https://github.com/nothq/notslack/releases/latest/download/notslack-linux-x86_64.tar.gz) |
+| Linux, ARM64 | [notslack-linux-arm64.tar.gz](https://github.com/nothq/notslack/releases/latest/download/notslack-linux-arm64.tar.gz) |
 | Windows, x86_64 | [notslack-windows-x86_64.zip](https://github.com/nothq/notslack/releases/latest/download/notslack-windows-x86_64.zip) |
 
 Each download is the whole app: one native binary plus the FFmpeg libraries it plays video with. No installer, no runtime, nothing else to fetch.
 
 - **macOS**: open the .dmg and drag notslack into Applications. The first time you open it, go to System Settings › Privacy & Security and click **Open Anyway**.
-- **Linux**: `tar -xzf notslack-linux-x86_64.tar.gz` and run `./notslack-linux-x86_64/notslack`.
+- **Linux**: `tar -xzf notslack-linux-x86_64.tar.gz` and run `./notslack-linux-x86_64/notslack` (`arm64` in place of `x86_64` on ARM).
 - **Windows**: unzip and run `notslack.exe`.
 
 Every [release](https://github.com/nothq/notslack/releases) is built from source by GitHub Actions.
@@ -53,6 +54,8 @@ This is early, and that is the fun part. Desktop notifications, Wayland, signed 
 notslack reuses the session of the Slack Desktop app you already have. The first time you click **Connect Slack**, notslack quits Slack Desktop, relaunches it with a local debugging port, reads the session of each signed-in workspace, and stores it in `~/.notslack/auth.json`, readable only by you. Nothing is sent anywhere except to Slack.
 
 So you need Slack Desktop installed and signed in. That works on macOS, Windows (Slack's installer or the MSI) and Linux (the .deb, .rpm, Snap or Flatpak).
+
+On Linux without Slack Desktop (Slack publishes no ARM64 build), **Connect Slack** opens a Chromium-family browser instead: your default browser if it is Chromium, Chrome, Brave, Edge or Vivaldi, otherwise the first of those installed. It uses a profile of its own in `~/.notslack/browser-profile`, so you sign in to Slack there once; notslack reads the session when the workspace loads and closes the window.
 
 ## Build and run
 

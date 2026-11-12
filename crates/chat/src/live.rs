@@ -42,7 +42,7 @@ pub use slack_auth::{
     SlackWebBuildTimestamp,
 };
 pub use slack_connection::{
-    SlackDesktopRecovery, SLACK_DESKTOP_CONNECTION_DISCLOSURE, SLACK_DESKTOP_CONNECTION_SUCCESS,
+    slack_desktop_connection_disclosure, SlackDesktopRecovery, SLACK_DESKTOP_CONNECTION_SUCCESS,
 };
 pub fn default_launch_route() -> Result<crate::model::ChatLaunchRoute, String> {
     let launch = default_slack_launch_context()?;

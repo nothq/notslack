@@ -175,7 +175,7 @@ impl Render for Notslack {
                 .child(
                     div()
                         .text_color(rgb(theme.text_muted))
-                        .child(live::SLACK_DESKTOP_CONNECTION_DISCLOSURE),
+                        .child(live::slack_desktop_connection_disclosure()),
                 )
                 .child(
                     div()
