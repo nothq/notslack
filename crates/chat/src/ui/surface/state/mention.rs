@@ -1,4 +1,5 @@
 mod panels;
+pub(super) mod people;
 
 use std::ops::Range;
 

@@ -122,7 +122,7 @@ impl SurfaceState {
         &self,
         normalized_query: &str,
     ) -> Vec<SlackAuxPanelRow> {
-        self.slack_visible_people_rows()
+        self.slack_mention_people_rows()
             .into_iter()
             .filter(|row| {
                 slack_aux_panel_matches_query(normalized_query, &row.label)

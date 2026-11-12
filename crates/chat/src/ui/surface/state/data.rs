@@ -268,6 +268,8 @@ pub struct SurfaceStateData {
     pub(crate) slack_aux_panel: Option<SlackAuxPanelState>,
     pub(crate) slack_composer_aux_target: Option<SlackComposerTarget>,
     pub(crate) slack_mention_picker_state: Option<SlackMentionPickerState>,
+    pub(super) slack_mention_people: Option<super::mention::people::SlackMentionPeople>,
+    pub(super) slack_mention_people_loading_team_id: Option<String>,
     pub(crate) slack_pending_conversation_id: Option<String>,
     pub(crate) slack_pending_conversation_route: SlackConversationLoadRoute,
     pub(crate) slack_active_loading_conversation_ids: HashSet<String>,
