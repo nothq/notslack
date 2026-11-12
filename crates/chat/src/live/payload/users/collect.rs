@@ -134,9 +134,45 @@ fn collect_message_user_ids(messages: &[Value], user_ids: &mut BTreeSet<String>)
         if let Some(blocks) = message.get("blocks").and_then(Value::as_array) {
             for block in blocks {
                 collect_rich_text_user_ids(block, user_ids);
+                collect_mrkdwn_user_ids(block, user_ids);
             }
         }
     }
+}
+
+/// The people mentioned as `<@U123>` in the mrkdwn text of Block Kit blocks,
+/// which apps use where people's messages use rich text.
+fn collect_mrkdwn_user_ids(value: &Value, user_ids: &mut BTreeSet<String>) {
+    match value {
+        Value::Object(object) => {
+            if object.get("type").and_then(Value::as_str) == Some("mrkdwn") {
+                if let Some(text) = object.get("text").and_then(Value::as_str) {
+                    user_ids.extend(mrkdwn_mentioned_user_ids(text).map(str::to_string));
+                }
+            }
+            for value in object.values() {
+                collect_mrkdwn_user_ids(value, user_ids);
+            }
+        }
+        Value::Array(values) => {
+            for value in values {
+                collect_mrkdwn_user_ids(value, user_ids);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn mrkdwn_mentioned_user_ids(text: &str) -> impl Iterator<Item = &str> {
+    text.split("<@").skip(1).filter_map(|rest| {
+        let user_id = &rest[..rest.find(['|', '>'])?];
+        let looks_like_user_id = user_id.starts_with(['U', 'W'])
+            && user_id.len() > 1
+            && user_id
+                .bytes()
+                .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit());
+        looks_like_user_id.then_some(user_id)
+    })
 }
 
 fn collect_rich_text_user_ids(value: &Value, user_ids: &mut BTreeSet<String>) {
@@ -177,4 +213,31 @@ fn channel_updated_ms(channel: &Value) -> i64 {
                 .or_else(|| value.as_str().and_then(|value| value.parse::<i64>().ok()))
         })
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod mrkdwn_tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn mentions_in_block_kit_mrkdwn_are_collected() {
+        let messages = [json!({
+            "bot_id": "B1",
+            "blocks": [
+                {"type": "section", "text": {"type": "mrkdwn", "text": "deployed by <@U04KPEGV0RW>"}},
+                {"type": "context", "elements": [
+                    {"type": "mrkdwn", "text": "cc <@W0123|someone> and <@not-a-user> and <https://example.com>"},
+                    {"type": "plain_text", "text": "<@U0PLAIN>"}
+                ]}
+            ]
+        })];
+        let mut user_ids = BTreeSet::new();
+        collect_message_user_ids(&messages, &mut user_ids);
+        assert_eq!(
+            user_ids.into_iter().collect::<Vec<_>>(),
+            ["U04KPEGV0RW", "W0123"]
+        );
+    }
 }

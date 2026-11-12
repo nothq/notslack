@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use crate::live::payload::{sidebar_dom::SlackSidebarSnapshot, util::slack_user_display_name};
 
-use block_kit::{slack_block_kit_blocks, slack_block_kit_body};
+use block_kit::{label_slack_block_kit_mentions, slack_block_kit_blocks, slack_block_kit_body};
 pub(super) use reactions::slack_message_reactions;
 
 pub(crate) fn slack_message_body(message: &Value, has_attachments: bool) -> String {
@@ -65,7 +65,8 @@ pub(in crate::live) fn slack_rich_text_body_from_blocks(
         })
         .filter_map(|block| slack_rich_text_block(block, users, sidebar_snapshot))
         .collect::<Vec<_>>();
-    let block_kit = slack_block_kit_blocks(raw_blocks, true);
+    let mut block_kit = slack_block_kit_blocks(raw_blocks, true);
+    label_slack_block_kit_mentions(&mut block_kit, users);
     (!blocks.is_empty() || !block_kit.is_empty()).then_some(SlackRichTextBody { blocks, block_kit })
 }
 

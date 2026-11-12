@@ -3,8 +3,12 @@ use crate::model::{
     SlackBlockKitContextElement, SlackBlockKitImage, SlackBlockKitText, SlackBlockKitTextKind,
     SlackRichTextBody,
 };
+use std::collections::HashMap;
+
 use serde::Deserialize;
 use serde_json::Value;
+
+use crate::live::payload::util::slack_user_display_name;
 
 #[derive(Deserialize)]
 #[serde(tag = "type")]
@@ -371,4 +375,126 @@ fn slack_block_kit_text_serves_image_link(
         .map_or(link, |(target, _label)| target)
         .trim();
     target.starts_with("https://") || target.starts_with("http://")
+}
+
+/// Names the people mentioned in mrkdwn text: `<@U123>` becomes
+/// `<@U123|Their Name>`, the form that carries its own label. A mention of
+/// someone not in `users` is left as it came.
+pub(super) fn label_slack_block_kit_mentions(
+    blocks: &mut [SlackBlockKitBlock],
+    users: &HashMap<String, Value>,
+) {
+    let label = |text: &mut SlackBlockKitText| {
+        if text.kind == SlackBlockKitTextKind::Markdown {
+            text.text = label_slack_mrkdwn_mentions(&text.text, users);
+        }
+    };
+    for block in blocks {
+        match block {
+            SlackBlockKitBlock::Header { text } => label(text),
+            SlackBlockKitBlock::Section { text, fields, .. } => {
+                text.iter_mut().chain(fields.iter_mut()).for_each(label);
+            }
+            SlackBlockKitBlock::Context { elements } => {
+                for element in elements {
+                    if let SlackBlockKitContextElement::Text { text } = element {
+                        label(text);
+                    }
+                }
+            }
+            SlackBlockKitBlock::Divider | SlackBlockKitBlock::Actions { .. } => {}
+        }
+    }
+}
+
+fn label_slack_mrkdwn_mentions(text: &str, users: &HashMap<String, Value>) -> String {
+    let mut labeled = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find("<@") {
+        let (before, mention) = rest.split_at(start);
+        labeled.push_str(before);
+        let Some(end) = mention.find('>') else {
+            rest = mention;
+            break;
+        };
+        let user_id = &mention[2..end];
+        let name = users
+            .get(user_id)
+            .and_then(slack_user_display_name)
+            .map(|name| name.replace(['<', '>', '|'], ""))
+            .filter(|name| !name.trim().is_empty());
+        match name {
+            Some(name) => labeled.push_str(&format!("<@{user_id}|{name}>")),
+            None => labeled.push_str(&mention[..=end]),
+        }
+        rest = &mention[end + 1..];
+    }
+    labeled.push_str(rest);
+    labeled
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    fn users() -> HashMap<String, Value> {
+        HashMap::from([(
+            "U1".to_string(),
+            json!({"id": "U1", "profile": {"real_name": "Grace Hopper"}}),
+        )])
+    }
+
+    #[test]
+    fn a_bare_mention_gets_the_persons_name() {
+        assert_eq!(
+            label_slack_mrkdwn_mentions("by <@U1>, see <https://example.com|run>", &users()),
+            "by <@U1|Grace Hopper>, see <https://example.com|run>"
+        );
+    }
+
+    #[test]
+    fn labeled_and_unknown_mentions_are_left_alone() {
+        let text = "<@U1|grace> and <@U404> and an open <@U1";
+        assert_eq!(label_slack_mrkdwn_mentions(text, &users()), text);
+    }
+
+    #[test]
+    fn only_mrkdwn_text_is_labeled() {
+        let text = |kind| SlackBlockKitText {
+            text: "<@U1>".to_string(),
+            kind,
+        };
+        let mut blocks = vec![
+            SlackBlockKitBlock::Header {
+                text: text(SlackBlockKitTextKind::Plain),
+            },
+            SlackBlockKitBlock::Section {
+                text: Some(text(SlackBlockKitTextKind::Markdown)),
+                fields: vec![text(SlackBlockKitTextKind::Markdown)],
+                accessory: None,
+            },
+        ];
+        label_slack_block_kit_mentions(&mut blocks, &users());
+        assert_eq!(
+            blocks,
+            vec![
+                SlackBlockKitBlock::Header {
+                    text: text(SlackBlockKitTextKind::Plain),
+                },
+                SlackBlockKitBlock::Section {
+                    text: Some(SlackBlockKitText {
+                        text: "<@U1|Grace Hopper>".to_string(),
+                        kind: SlackBlockKitTextKind::Markdown,
+                    }),
+                    fields: vec![SlackBlockKitText {
+                        text: "<@U1|Grace Hopper>".to_string(),
+                        kind: SlackBlockKitTextKind::Markdown,
+                    }],
+                    accessory: None,
+                },
+            ]
+        );
+    }
 }
