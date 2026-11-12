@@ -208,15 +208,11 @@ pub(super) struct SlackDmUser {
 
 impl SlackDmUser {
     pub(super) fn display_name(&self) -> String {
-        [
-            self.profile.real_name.as_deref(),
-            self.real_name.as_deref(),
+        crate::live::name_display::preferred_person_name(
+            Some(self.team_id.as_str()),
             self.profile.display_name.as_deref(),
-        ]
-        .into_iter()
-        .flatten()
-        .map(str::trim)
-        .find(|name| !name.is_empty())
+            [self.profile.real_name.as_deref(), self.real_name.as_deref()],
+        )
         .unwrap_or(self.id.as_str())
         .to_string()
     }

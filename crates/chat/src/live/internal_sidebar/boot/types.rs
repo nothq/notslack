@@ -256,14 +256,12 @@ pub(super) struct SlackTeamInfoTeam {
 
 impl SlackUserInfoUser {
     pub(super) fn display_name(&self) -> Option<String> {
-        self.profile
-            .real_name
-            .as_deref()
-            .or(self.real_name.as_deref())
-            .or(self.profile.display_name.as_deref())
-            .map(str::trim)
-            .filter(|name| !name.is_empty())
-            .map(ToOwned::to_owned)
+        crate::live::name_display::preferred_person_name(
+            None,
+            self.profile.display_name.as_deref(),
+            [self.profile.real_name.as_deref(), self.real_name.as_deref()],
+        )
+        .map(ToOwned::to_owned)
     }
 
     pub(super) fn avatar_image_url(&self, purpose: SlackAvatarPurpose) -> Option<String> {

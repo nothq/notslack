@@ -97,7 +97,13 @@ impl SlackLiveWorkspaceLoader {
         self.api.clone()
     }
 
+    /// Learns which names this workspace shows before anything names a person.
+    fn ensure_name_display(&self) {
+        crate::live::name_display::ensure_team_name_display(&self.team_id, &self.api);
+    }
+
     pub fn load_workspace(&self, conversation_id: &str) -> Result<SlackWorkspace, String> {
+        self.ensure_name_display();
         self.load_workspace_with_anchor(conversation_id, None)
     }
 
@@ -106,10 +112,12 @@ impl SlackLiveWorkspaceLoader {
         conversation_id: &str,
         cursor: Option<&SlackConversationMembersCursor>,
     ) -> Result<SlackConversationMembersSnapshot, String> {
+        self.ensure_name_display();
         members::load_conversation_members(self, conversation_id, cursor)
     }
 
     pub fn load_shell(&self) -> Result<SlackShellSnapshot, String> {
+        self.ensure_name_display();
         let tasks = self.spawn_workspace_preload_tasks();
         let team_info = tasks
             .team_info
@@ -129,6 +137,7 @@ impl SlackLiveWorkspaceLoader {
     }
 
     pub fn load_sidebar(&self, conversation_id: &str) -> Result<SlackSidebarStageSnapshot, String> {
+        self.ensure_name_display();
         let (conversations_result, sidebar_result) = thread::scope(|scope| {
             let conversations = scope.spawn(|| self.load_workspace_conversations(conversation_id));
             let sidebar = scope.spawn(|| self.load_sidebar_snapshot());
@@ -163,6 +172,7 @@ impl SlackLiveWorkspaceLoader {
     }
 
     pub fn load_dm_inbox(&self, cursor: Option<&str>) -> Result<SlackDmInboxSnapshot, String> {
+        self.ensure_name_display();
         let auth_test = self.load_auth_test()?;
         let self_user_id = auth_test
             .get("user_id")
@@ -184,6 +194,7 @@ impl SlackLiveWorkspaceLoader {
         &self,
         cursor: Option<&SlackActivityCursor>,
     ) -> Result<SlackActivitySnapshot, String> {
+        self.ensure_name_display();
         let page = self.sidebar_api.load_activity_feed(cursor)?;
         let actor_user_ids = page.reaction_actor_user_ids();
         let hydration = self.api.load_messages_list(

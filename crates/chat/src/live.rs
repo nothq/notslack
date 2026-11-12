@@ -7,6 +7,7 @@ mod conversation;
 mod events;
 mod internal_sidebar;
 mod local_file;
+mod name_display;
 mod payload;
 mod runtime;
 mod runtime_registry;

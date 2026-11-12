@@ -98,9 +98,15 @@ pub(super) fn slack_conversation_label(
 }
 
 pub(super) fn slack_user_display_name(user: &Value) -> Option<String> {
-    string_at(user, &["profile", "real_name"])
-        .or_else(|| string_at(user, &["real_name"]))
-        .or_else(|| string_at(user, &["profile", "display_name"]))
+    crate::live::name_display::preferred_person_name(
+        str_at(user, &["team_id"]),
+        str_at(user, &["profile", "display_name"]),
+        [
+            str_at(user, &["profile", "real_name"]),
+            str_at(user, &["real_name"]),
+        ],
+    )
+    .map(str::to_string)
 }
 
 pub(in crate::live) struct SlackAvatarImageUrls<'a> {
@@ -194,6 +200,12 @@ pub(super) fn slack_profile_from_user(user_id: &str, user: &Value) -> SlackProfi
         avatar_image_mimetype: None,
         display_name,
     }
+}
+
+fn str_at<'a>(value: &'a Value, path: &[&str]) -> Option<&'a str> {
+    path.iter()
+        .try_fold(value, |value, segment| value.get(*segment))?
+        .as_str()
 }
 
 pub(super) fn string_at(value: &Value, path: &[&str]) -> Option<String> {
