@@ -120,7 +120,8 @@ pub use super::quick_search::{
     SlackQuickSearchSnapshot,
 };
 pub use super::reaction_catalog::{
-    SlackCustomEmoji, SlackCustomEmojiAsset, SlackReactionCatalogSnapshot,
+    SlackCustomEmoji, SlackCustomEmojiAsset, SlackCustomEmojiUpload, SlackEmojiPack,
+    SlackEmojiPackEmoji, SlackReactionCatalogSnapshot,
 };
 pub use super::reactions::{
     SlackReactionConversationScope, SlackReactionMutationReceipt, SlackReactionTarget,

@@ -29,6 +29,7 @@ impl SlackWorkspaceApiCapabilities {
         mutate_preferred_skin_tone: true,
         load_destination_directory: true,
         load_reaction_catalog: true,
+        manage_custom_emoji: true,
         open_conversation: true,
         load_conversation: true,
         refresh_conversation: true,

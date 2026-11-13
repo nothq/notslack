@@ -70,6 +70,7 @@ mod pins;
 mod presence;
 mod profile;
 mod query;
+mod add_emoji;
 mod reaction_picker;
 mod reactions;
 mod realtime;
@@ -95,6 +96,7 @@ pub(crate) use date_jump::{
     SlackDateJumpMenuState, SlackDateJumpMenuTarget, SlackDateJumpOverlay,
     SlackDateJumpPickerState, SlackDateJumpRequest,
 };
+pub(in crate::ui::surface) use add_emoji::SLACK_EMOJI_PACK_CARD_EMOJI;
 pub(crate) use permalink::{SlackMessageNavigationHighlight, SlackMessageNavigationRequest};
 pub(in crate::ui::surface) use presence::SlackPresenceAuthority;
 pub(crate) use schedule::{

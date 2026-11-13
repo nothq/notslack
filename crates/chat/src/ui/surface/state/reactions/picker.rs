@@ -1,7 +1,9 @@
 use super::super::{Context, SurfaceState};
 use crate::ui::surface::{
-    SlackReactionPickerIdentity, SlackReactionPickerSelection, SlackReactionPickerSource,
-    SlackReactionSkinToneSupport, SLACK_REACTION_PICKER_CATEGORY_COUNT,
+    message::slack_reaction_picker_glyph, SlackComposerTarget,
+    SlackReactionPickerEmojiPresentation, SlackReactionPickerIdentity,
+    SlackReactionPickerSelection, SlackReactionPickerSource, SlackReactionSkinToneSupport,
+    SLACK_REACTION_PICKER_CATEGORY_COUNT,
 };
 
 impl SurfaceState {
@@ -30,15 +32,17 @@ impl SurfaceState {
             cx.notify();
             return;
         }
-        if !self.slack_workspace_api_capabilities.mutate_reactions {
-            self.fail_slack_reaction(
-                "Slack reaction changes are unavailable for this workspace.",
-                cx,
-            );
-            return;
-        }
-        if self.slack_reaction_pending_for_target(identity.target().as_ref()) {
-            return;
+        if let Some(target) = identity.target() {
+            if !self.slack_workspace_api_capabilities.mutate_reactions {
+                self.fail_slack_reaction(
+                    "Slack reaction changes are unavailable for this workspace.",
+                    cx,
+                );
+                return;
+            }
+            if self.slack_reaction_pending_for_target(target.as_ref()) {
+                return;
+            }
         }
         self.slack_aux_panel = None;
         self.slack_composer_focused = false;
@@ -111,23 +115,24 @@ impl SurfaceState {
         cx.notify();
     }
 
-    pub(in crate::ui::surface::state) fn activate_first_slack_reaction_picker_emoji(
+    pub(in crate::ui::surface) fn activate_first_slack_reaction_picker_emoji(
         &mut self,
         cx: &mut Context<Self>,
     ) {
-        let Some(picker) = self.slack_reaction_picker.as_ref() else {
+        let Some((identity, emoji)) = self.slack_reaction_picker.as_ref().and_then(|picker| {
+            picker
+                .emojis
+                .first()
+                .map(|emoji| (picker.identity(), emoji.clone()))
+        }) else {
             return;
         };
-        let Some(emoji) = picker.emojis.first() else {
-            return;
-        };
-        let target = picker.identity.target().clone();
-        let reactions = picker.reactions.clone();
-        let reaction_name = self.slack_reaction_picker_name(&emoji.name, emoji.skin_tone_support);
-        self.slack_reaction_picker = None;
-        self.slack_skin_tone_menu_open = false;
-        self.slack_skin_tone_menu_focus_pending = false;
-        self.toggle_slack_reaction_for_target_with_state(target, reactions, &reaction_name, cx);
+        self.activate_slack_reaction_picker_emoji(
+            &identity,
+            &emoji.name,
+            emoji.skin_tone_support,
+            cx,
+        );
     }
 
     pub(crate) fn activate_slack_reaction_picker_emoji(
@@ -137,19 +142,65 @@ impl SurfaceState {
         skin_tone_support: SlackReactionSkinToneSupport,
         cx: &mut Context<Self>,
     ) {
-        let Some((target, reactions)) = self
+        let Some(picker) = self
             .slack_reaction_picker
             .as_ref()
             .filter(|picker| picker.identity == *identity)
-            .map(|picker| (picker.identity.target().clone(), picker.reactions.clone()))
         else {
             return;
         };
+        let message_target = picker.identity.target().cloned();
+        let composer_snippet = picker.identity.composer_target().cloned().map(|target| {
+            let glyph = picker
+                .emojis
+                .iter()
+                .find_map(|emoji| match &emoji.presentation {
+                    SlackReactionPickerEmojiPresentation::Glyph(glyph)
+                        if emoji.name.as_ref() == reaction_name =>
+                    {
+                        Some(glyph.clone())
+                    }
+                    _ => None,
+                });
+            (target, glyph)
+        });
+        let reactions = picker.reactions.clone();
         let reaction_name = self.slack_reaction_picker_name(reaction_name, skin_tone_support);
         self.slack_reaction_picker = None;
         self.slack_skin_tone_menu_open = false;
         self.slack_skin_tone_menu_focus_pending = false;
-        self.toggle_slack_reaction_for_target_with_state(target, reactions, &reaction_name, cx);
+        if let Some(target) = message_target {
+            self.toggle_slack_reaction_for_target_with_state(target, reactions, &reaction_name, cx);
+        } else if let Some((target, glyph)) = composer_snippet {
+            // Standard emoji go in as the character, with the chosen skin
+            // tone; custom ones as their `:name:` code, as Slack writes them.
+            let snippet = match glyph {
+                Some(glyph) => format!(
+                    "{} ",
+                    slack_reaction_picker_glyph(
+                        &glyph,
+                        skin_tone_support,
+                        self.slack_preferred_skin_tone_selection(),
+                    )
+                ),
+                None => format!(":{reaction_name}: "),
+            };
+            self.insert_slack_picked_emoji(target, &snippet, cx);
+        }
+    }
+
+    fn insert_slack_picked_emoji(
+        &mut self,
+        target: SlackComposerTarget,
+        snippet: &str,
+        cx: &mut Context<Self>,
+    ) {
+        match target {
+            SlackComposerTarget::Main => self.insert_slack_composer_snippet(snippet, cx),
+            SlackComposerTarget::Reply(target) => {
+                self.insert_slack_reply_snippet(&target, snippet, cx);
+            }
+        }
     }
 
     pub(crate) fn reset_slack_reaction_context(&mut self) {

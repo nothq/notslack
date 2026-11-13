@@ -31,6 +31,8 @@ pub struct SlackWorkspaceApiCapabilities {
     pub mutate_preferred_skin_tone: bool,
     pub load_destination_directory: bool,
     pub load_reaction_catalog: bool,
+    /// Adding custom emoji and emoji packs to the workspace.
+    pub manage_custom_emoji: bool,
     pub open_conversation: bool,
     pub load_conversation: bool,
     pub refresh_conversation: bool,

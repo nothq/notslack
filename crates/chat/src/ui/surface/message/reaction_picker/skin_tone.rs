@@ -28,12 +28,56 @@ impl SurfaceState {
             .h(px(SLACK_REACTION_PICKER_FOOTER_HEIGHT))
             .flex_none()
             .bg(rgb(palette.reaction_picker_footer_bg))
+            .border_t_1()
+            .border_color(rgb(palette.reaction_picker_border))
             .flex()
             .items_center()
+            .child(self.render_slack_add_emoji_button(cx))
             .when(self.slack_skin_tone_error.is_some(), |footer| {
                 footer.child(slack_skin_tone_error_label(presentation.error_label))
             })
             .child(self.render_slack_skin_tone_footer_controls(&presentation, cx))
+    }
+
+    /// Opens the Add emoji dialog, for uploading a custom emoji or adding an
+    /// emoji pack.
+    fn render_slack_add_emoji_button(&self, cx: &mut Context<Self>) -> Stateful<Div> {
+        let palette = slack_palette(self.appearance_mode);
+        div()
+            .id("slack-reaction-picker-add-emoji")
+            .role(Role::Button)
+            .aria_label("Add Emoji")
+            .focusable()
+            .tab_stop(true)
+            .ml(px(16.0))
+            .h(px(32.0))
+            .px(px(12.0))
+            .flex_none()
+            .flex()
+            .items_center()
+            .rounded(px(6.0))
+            .border_1()
+            .border_color(rgb(palette.reaction_picker_border))
+            .text_size(px(13.0))
+            .font_weight(FontWeight::BOLD)
+            .text_color(rgb(palette.main_text))
+            .cursor_pointer()
+            .hover(move |style| style.bg(rgb(palette.reaction_picker_hover_bg)))
+            .focus_visible(move |style| style.bg(rgb(palette.reaction_picker_focus_bg)))
+            .on_click(cx.listener(|this, _, _, cx| this.open_slack_add_emoji(cx)))
+            .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
+                if slack_skin_tone_toggle_key(event) {
+                    window.prevent_default();
+                    cx.stop_propagation();
+                    this.open_slack_add_emoji(cx);
+                }
+            }))
+            .child("Add Emoji")
+    }
+
+    fn open_slack_add_emoji(&mut self, cx: &mut Context<Self>) {
+        self.close_slack_reaction_picker(cx);
+        self.open_slack_add_emoji_dialog(cx);
     }
 
     fn slack_skin_tone_footer_presentation(&self) -> SlackSkinToneFooterPresentation {
@@ -284,7 +328,7 @@ fn slack_skin_tone_toggle_key(event: &KeyDownEvent) -> bool {
         && matches!(event.keystroke.key.as_str(), "enter" | "space")
 }
 
-pub(super) fn slack_reaction_picker_glyph(
+pub(crate) fn slack_reaction_picker_glyph(
     glyph: &str,
     support: SlackReactionSkinToneSupport,
     selection: Option<SlackSkinTone>,

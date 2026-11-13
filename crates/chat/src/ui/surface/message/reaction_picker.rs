@@ -3,8 +3,9 @@ use crate::ui::surface::{
     SlackReactionPickerState, SlackReactionSkinToneSupport, SurfaceState,
 };
 use crate::ui::{
-    alpha, div, point, px, relative, rgb, BoxShadow, Context, Div, FontWeight, InteractiveElement,
-    IntoElement, KeyDownEvent, ParentElement, StatefulInteractiveElement, Styled,
+    alpha, div, point, px, relative, rgb, BoxShadow, Context, Div, FluentBuilder, FontWeight,
+    InteractiveElement, IntoElement, KeyDownEvent, ParentElement, StatefulInteractiveElement,
+    Styled,
 };
 use gpui::{anchored, deferred, Anchor, Role, Stateful};
 use gpui_components::backdrop::dismissible_click_away_with_key;
@@ -13,7 +14,7 @@ mod categories;
 mod grid;
 mod skin_tone;
 
-use skin_tone::slack_reaction_picker_glyph;
+pub(crate) use skin_tone::slack_reaction_picker_glyph;
 
 const SLACK_REACTION_PICKER_WIDTH: f32 = 361.0;
 const SLACK_REACTION_PICKER_HEIGHT: f32 = 540.0;
@@ -72,6 +73,15 @@ impl SurfaceState {
         let palette = slack_palette(self.appearance_mode);
         let picker_surface = self.render_slack_reaction_picker_surface(picker, palette, cx);
         match picker.identity.anchor() {
+            SlackReactionPickerAnchor::Composer => div()
+                .absolute()
+                .bottom(px(0.0))
+                .left(px(0.0))
+                .size_0()
+                .child(
+                    deferred(anchored().anchor(Anchor::BottomLeft).child(picker_surface))
+                        .with_priority(50),
+                ),
             SlackReactionPickerAnchor::ReactionBar => div()
                 .absolute()
                 .bottom(px(31.0))
@@ -84,7 +94,7 @@ impl SurfaceState {
             SlackReactionPickerAnchor::HoverAction
                 if matches!(
                     picker.identity.render_context(),
-                    SlackMessageRenderContext::Thread | SlackMessageRenderContext::Later
+                    Some(SlackMessageRenderContext::Thread | SlackMessageRenderContext::Later)
                 ) =>
             {
                 div()
@@ -116,9 +126,16 @@ impl SurfaceState {
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let id = picker.identity().element_id();
+        // Handy reactions only make sense when reacting to a message.
+        let reacting = picker.identity.target().is_some();
+        let height = if reacting {
+            SLACK_REACTION_PICKER_HEIGHT
+        } else {
+            SLACK_REACTION_PICKER_HEIGHT - SLACK_REACTION_PICKER_HANDY_HEIGHT
+        };
         let surface = div()
             .w(px(SLACK_REACTION_PICKER_WIDTH))
-            .h(px(SLACK_REACTION_PICKER_HEIGHT))
+            .h(px(height))
             .rounded(px(6.0))
             .bg(rgb(palette.main_bg))
             .overflow_hidden()
@@ -128,7 +145,9 @@ impl SurfaceState {
             .child(self.render_slack_reaction_picker_categories(picker, cx))
             .child(self.render_slack_reaction_picker_search(cx))
             .child(self.render_slack_reaction_picker_list(picker, cx))
-            .child(self.render_slack_reaction_picker_handy_reactions(picker, cx))
+            .when(reacting, |surface| {
+                surface.child(self.render_slack_reaction_picker_handy_reactions(picker, cx))
+            })
             .child(self.render_slack_reaction_picker_footer(cx));
         dismissible_click_away_with_key(
             surface,
@@ -200,7 +219,6 @@ impl SurfaceState {
             .h(px(SLACK_REACTION_PICKER_HANDY_HEIGHT))
             .flex_none()
             .border_t_1()
-            .border_b_1()
             .border_color(rgb(palette.reaction_picker_border))
             .bg(rgb(palette.reaction_picker_footer_bg))
             .flex()

@@ -138,6 +138,7 @@ fn slack_message_default_text_style(
             | SlackMessageBodyBlockKind::BlockKitDivider
             | SlackMessageBodyBlockKind::BlockKitActions => "Lato".into(),
         },
+        font_fallbacks: crate::ui::emoji_font_fallbacks(),
         ..Default::default()
     }
 }

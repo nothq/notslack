@@ -22,6 +22,12 @@ fn main() {
                 Cow::Borrowed(include_bytes!("../assets/fonts/Lato-Black.ttf").as_slice()),
             ])
             .expect("bundled Lato fonts load");
+        #[cfg(target_os = "linux")]
+        cx.text_system()
+            .add_fonts(vec![Cow::Borrowed(
+                include_bytes!("../assets/fonts/TwemojiMozilla.ttf").as_slice(),
+            )])
+            .expect("bundled emoji font loads");
         theme::init(theme::LoadThemes::JustBase, cx);
         cx.set_global(appearance_mode(cx.window_appearance()));
         cx.on_action(|_: &Quit, cx| cx.quit());
@@ -142,12 +148,13 @@ impl Render for Notslack {
             ..Viewport::default()
         };
         let theme = SurfaceTheme::for_appearance_mode(*cx.global::<AppearanceMode>());
-        let root = div()
+        let mut root = div()
             .size_full()
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key_down))
             .bg(rgb(theme.app_bg))
             .font_family("Lato");
+        root.text_style().font_fallbacks = ui::emoji_font_fallbacks();
         match &mut self.content {
             Content::Chat(chat) => {
                 let frame = SurfaceFrame {

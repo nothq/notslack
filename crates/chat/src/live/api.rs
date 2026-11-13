@@ -15,6 +15,7 @@ mod huddle;
 mod media;
 pub(crate) mod messages;
 mod observed;
+mod custom_emoji;
 mod reaction_catalog;
 mod realtime;
 mod search;

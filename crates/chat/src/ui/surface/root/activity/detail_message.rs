@@ -143,8 +143,8 @@ impl SurfaceState {
         let palette = slack_palette(self.appearance_mode);
         let picker = self.slack_reaction_picker.as_ref().filter(|picker| {
             row.action_target.as_ref().is_some_and(|target| {
-                picker.identity.target() == target
-                    && picker.identity.render_context() == SlackMessageRenderContext::Activity
+                picker.identity.target() == Some(target)
+                    && picker.identity.render_context() == Some(SlackMessageRenderContext::Activity)
                     && picker.identity.anchor() == SlackReactionPickerAnchor::HoverAction
             })
         });

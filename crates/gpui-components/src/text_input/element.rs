@@ -85,6 +85,11 @@ impl TextInput {
 
 impl Render for TextInput {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let font_fallbacks = window.text_style().font_fallbacks;
+        if font_fallbacks != self.font_fallbacks {
+            self.font_fallbacks = font_fallbacks;
+            self.invalidate_layout();
+        }
         self.refresh_layout_for_last_width(window, cx);
         let focused = self.sync_render_focus(window, cx);
         let accessibility = self.accessibility.clone();

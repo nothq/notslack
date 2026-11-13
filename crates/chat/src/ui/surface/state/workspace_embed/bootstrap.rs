@@ -17,7 +17,10 @@ impl SurfaceState {
             .flex_col()
             .bg(rgb(palette.surface_bg))
             .text_color(rgb(palette.surface_text))
-            .font(font("Lato"))
+            .font(gpui::Font {
+                fallbacks: crate::ui::emoji_font_fallbacks(),
+                ..font("Lato")
+            })
             .child(self.render_slack_bootstrap_history())
             .child(self.render_slack_bootstrap_body(shimmer))
             .into_any_element()

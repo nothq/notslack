@@ -22,6 +22,7 @@ impl SurfaceState {
             font_family: "Lato".into(),
             font_size: px(font_size).into(),
             line_height: px(line_height).into(),
+            font_fallbacks: crate::ui::emoji_font_fallbacks(),
             ..Default::default()
         };
         StyledText::new(row.body_preview.clone()).with_default_highlights(

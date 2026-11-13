@@ -104,6 +104,9 @@ impl TextRunBuilder<'_> {
                     self.input_font.clone()
                 }
             });
+        if run_font.fallbacks.is_none() {
+            run_font.fallbacks = self.input_font.fallbacks.clone();
+        }
         if let Some(font_weight) = highlight.and_then(|highlight| highlight.font_weight) {
             run_font.weight = font_weight;
         }

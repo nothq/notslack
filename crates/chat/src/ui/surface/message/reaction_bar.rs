@@ -133,8 +133,8 @@ impl SurfaceState {
         let interaction_enabled = !self.slack_reaction_pending_for_target(&target);
         let render_context = interaction.render_context;
         let picker = self.slack_reaction_picker.as_ref().filter(|picker| {
-            picker.identity.target() == &target
-                && picker.identity.render_context() == render_context
+            picker.identity.target() == Some(&target)
+                && picker.identity.render_context() == Some(render_context)
                 && picker.identity.anchor() == SlackReactionPickerAnchor::ReactionBar
         });
         let background = match self.appearance_mode {

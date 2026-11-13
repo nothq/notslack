@@ -184,6 +184,22 @@ macro_rules! slack_workspace_discovery_api {
             Err("Slack reaction catalog loading is unavailable for this workspace runtime"
                 .to_string())
         }
+        fn load_slack_emoji_packs(&self) -> Result<Vec<crate::model::SlackEmojiPack>, String> {
+            Err("Slack emoji packs are unavailable for this workspace runtime".to_string())
+        }
+        fn set_slack_emoji_pack_installed(
+            &self,
+            _pack_id: &str,
+            _installed: bool,
+        ) -> Result<(), String> {
+            Err("Slack emoji packs are unavailable for this workspace runtime".to_string())
+        }
+        fn add_slack_custom_emoji(
+            &self,
+            _upload: crate::model::SlackCustomEmojiUpload,
+        ) -> Result<(), String> {
+            Err("Adding Slack custom emoji is unavailable for this workspace runtime".to_string())
+        }
     };
 }
 

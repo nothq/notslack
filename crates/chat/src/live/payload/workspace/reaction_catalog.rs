@@ -45,3 +45,26 @@ impl SlackLiveWorkspaceLoader {
             .map(|snapshot| snapshot.clone())
     }
 }
+
+impl SlackLiveWorkspaceLoader {
+    pub fn load_emoji_packs(&self) -> Result<Vec<crate::model::SlackEmojiPack>, String> {
+        self.api.load_emoji_packs()
+    }
+
+    /// Adds or removes a pack, then drops the cached catalog so the picker
+    /// shows the change.
+    pub fn set_emoji_pack_installed(&self, pack_id: &str, installed: bool) -> Result<(), String> {
+        self.api.set_emoji_pack_installed(pack_id, installed)?;
+        self.invalidate_reaction_catalog();
+        Ok(())
+    }
+
+    pub fn add_custom_emoji(
+        &self,
+        upload: crate::model::SlackCustomEmojiUpload,
+    ) -> Result<(), String> {
+        self.api.add_custom_emoji(upload)?;
+        self.invalidate_reaction_catalog();
+        Ok(())
+    }
+}

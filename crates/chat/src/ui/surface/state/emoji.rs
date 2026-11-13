@@ -6,15 +6,18 @@ use super::{
     SlackAuxPanelRowAction, SlackAuxPanelSection, SlackAuxPanelState, SlackComposerTarget,
     SurfaceState, SLACK_COMMON_EMOJI_SHORTCODES,
 };
+use crate::ui::surface::SlackReactionPickerSource;
 
 impl SurfaceState {
     pub(crate) fn open_slack_emoji_picker(&mut self, cx: &mut Context<Self>) {
         if !self.can_mutate_current_slack_send_draft() {
             return;
         }
-        self.slack_composer_aux_target = Some(SlackComposerTarget::Main);
         self.slack_mention_picker_state = None;
-        self.set_slack_emoji_query(String::new(), cx);
+        self.toggle_slack_reaction_picker_for_target(
+            SlackReactionPickerSource::composer(SlackComposerTarget::Main),
+            cx,
+        );
     }
 
     pub(crate) fn open_slack_mention_picker(&mut self, cx: &mut Context<Self>) {
@@ -88,6 +91,7 @@ impl SurfaceState {
         let suggested_rows = SLACK_COMMON_EMOJI_SHORTCODES
             .into_iter()
             .filter_map(emojis::get_by_shortcode)
+            .filter(|emoji| crate::ui::emoji_font_draws(emoji))
             .filter(|emoji| seen.insert(emoji.as_str().to_string()))
             .map(Self::slack_emoji_picker_row)
             .collect::<Vec<_>>();
@@ -104,6 +108,7 @@ impl SurfaceState {
         ]
         .into_iter()
         .flat_map(|group| group.emojis())
+        .filter(|emoji| crate::ui::emoji_font_draws(emoji))
         .filter(|emoji| seen.insert(emoji.as_str().to_string()))
         .take(54)
         .map(Self::slack_emoji_picker_row)
@@ -125,6 +130,7 @@ impl SurfaceState {
 
     fn slack_search_emoji_sections(&self, normalized_query: &str) -> Vec<SlackAuxPanelSection> {
         let mut matches = emojis::iter()
+            .filter(|emoji| crate::ui::emoji_font_draws(emoji))
             .filter_map(|emoji| {
                 slack_emoji_match_score(emoji, normalized_query).map(|score| {
                     (

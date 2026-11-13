@@ -81,6 +81,7 @@ impl TextInput {
             blink_scheduled: false,
             blink_generation: 0,
             focused_last_render: false,
+            font_fallbacks: None,
         }
     }
 

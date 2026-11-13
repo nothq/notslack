@@ -80,8 +80,8 @@ impl SurfaceState {
     ) -> Option<&'a SlackReactionPickerState> {
         self.slack_reaction_picker.as_ref().filter(|picker| {
             row.action_target.as_ref().is_some_and(|target| {
-                picker.identity.target() == target
-                    && picker.identity.render_context() == context.render_context
+                picker.identity.target() == Some(target)
+                    && picker.identity.render_context() == Some(context.render_context)
                     && picker.identity.anchor() == SlackReactionPickerAnchor::HoverAction
             })
         })

@@ -95,6 +95,10 @@ pub struct TextInput {
     blink_scheduled: bool,
     blink_generation: u64,
     focused_last_render: bool,
+    /// The fallback fonts (such as the app's emoji font) of the text style
+    /// the input last rendered in. Text is also reshaped outside rendering,
+    /// where the window's text style lacks them.
+    font_fallbacks: Option<gpui::FontFallbacks>,
 }
 
 fn sanitize_for_mode(mode: TextInputMode, text: &str) -> String {

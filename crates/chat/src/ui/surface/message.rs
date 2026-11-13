@@ -17,6 +17,7 @@ mod hover_actions;
 mod lightbox;
 mod reaction_bar;
 mod reaction_picker;
+pub(crate) use reaction_picker::slack_reaction_picker_glyph;
 mod render_core;
 mod reply_summary;
 mod rows;

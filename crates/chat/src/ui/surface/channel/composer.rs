@@ -6,6 +6,7 @@ use super::{
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, ParentElement,
     SlackComposerFormatAction, SlackShellIcon, StatefulInteractiveElement, Styled, SurfaceState,
     Window, SLACK_COMPOSER_ATTACHMENTS_HEIGHT, SLACK_COMPOSER_INPUT_HEIGHT,
+    SLACK_COMPOSER_PICKER_BOTTOM_OFFSET, SLACK_COMPOSER_PICKER_LEFT_INSET,
     SLACK_COMPOSER_TOOLBAR_HEIGHT,
 };
 use crate::ui::surface::SlackMainComposerPresentation;
@@ -74,6 +75,20 @@ impl SurfaceState {
             .when_some(composer_popover, |this, panel| {
                 this.child(self.render_slack_composer_popover(panel, cx))
             })
+            .when_some(
+                self.slack_reaction_picker.as_ref().filter(|picker| {
+                    picker.identity.composer_target() == Some(&super::SlackComposerTarget::Main)
+                }),
+                |this, picker| {
+                    this.child(
+                        div()
+                            .absolute()
+                            .left(px(SLACK_COMPOSER_PICKER_LEFT_INSET))
+                            .bottom(px(SLACK_COMPOSER_PICKER_BOTTOM_OFFSET))
+                            .child(self.render_slack_reaction_picker(picker, cx)),
+                    )
+                },
+            )
             .child(self.render_slack_composer_hint()))
         .into_any_element()
     }

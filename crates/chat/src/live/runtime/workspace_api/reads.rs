@@ -234,6 +234,25 @@ macro_rules! impl_workspace_api_reads {
             self.loader.load_reaction_catalog()
         }
 
+        fn load_slack_emoji_packs(&self) -> Result<Vec<crate::model::SlackEmojiPack>, String> {
+            self.loader.load_emoji_packs()
+        }
+
+        fn set_slack_emoji_pack_installed(
+            &self,
+            pack_id: &str,
+            installed: bool,
+        ) -> Result<(), String> {
+            self.loader.set_emoji_pack_installed(pack_id, installed)
+        }
+
+        fn add_slack_custom_emoji(
+            &self,
+            upload: crate::model::SlackCustomEmojiUpload,
+        ) -> Result<(), String> {
+            self.loader.add_custom_emoji(upload)
+        }
+
         fn open_slack_conversation(
             &self,
             request: SlackConversationOpenRequest,

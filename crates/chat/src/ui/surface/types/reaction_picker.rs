@@ -4,8 +4,8 @@ use gpui::ElementId;
 use uuid::Uuid;
 
 use super::{
-    Arc, ListState, Range, SharedString, SlackMessageActionTarget, SlackMessageRenderContext,
-    SlackReaction, SlackReactionSkinToneSupport,
+    Arc, ListState, Range, SharedString, SlackComposerTarget, SlackMessageActionTarget,
+    SlackMessageRenderContext, SlackReaction, SlackReactionSkinToneSupport,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -213,13 +213,24 @@ pub(crate) struct SlackReactionCatalogLoad {
 pub(crate) enum SlackReactionPickerAnchor {
     HoverAction,
     ReactionBar,
+    Composer,
+}
+
+/// What a pick from the picker does: react to a message, or insert the emoji
+/// into a composer draft.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum SlackReactionPickerTarget {
+    Message {
+        target: Arc<SlackMessageActionTarget>,
+        render_context: SlackMessageRenderContext,
+        anchor: SlackReactionPickerAnchor,
+    },
+    Composer(SlackComposerTarget),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct SlackReactionPickerIdentity {
-    target: Arc<SlackMessageActionTarget>,
-    render_context: SlackMessageRenderContext,
-    anchor: SlackReactionPickerAnchor,
+    target: SlackReactionPickerTarget,
     element_id: ElementId,
 }
 
@@ -229,12 +240,22 @@ impl SlackReactionPickerIdentity {
         render_context: SlackMessageRenderContext,
         anchor: SlackReactionPickerAnchor,
     ) -> Self {
+        Self::with_target(SlackReactionPickerTarget::Message {
+            target,
+            render_context,
+            anchor,
+        })
+    }
+
+    pub(crate) fn composer(target: SlackComposerTarget) -> Self {
+        Self::with_target(SlackReactionPickerTarget::Composer(target))
+    }
+
+    fn with_target(target: SlackReactionPickerTarget) -> Self {
         let mut element_id = [0; 20];
         element_id[..16].copy_from_slice(Uuid::new_v4().as_bytes());
         Self {
             target,
-            render_context,
-            anchor,
             element_id: ElementId::OpaqueId(element_id),
         }
     }
@@ -245,20 +266,36 @@ impl SlackReactionPickerIdentity {
 
     pub(crate) fn matches_surface(&self, other: &Self) -> bool {
         self.target == other.target
-            && self.render_context == other.render_context
-            && self.anchor == other.anchor
     }
 
-    pub(crate) fn target(&self) -> &Arc<SlackMessageActionTarget> {
-        &self.target
+    /// The message a pick reacts to; `None` for a composer's picker.
+    pub(crate) fn target(&self) -> Option<&Arc<SlackMessageActionTarget>> {
+        match &self.target {
+            SlackReactionPickerTarget::Message { target, .. } => Some(target),
+            SlackReactionPickerTarget::Composer(_) => None,
+        }
     }
 
-    pub(crate) fn render_context(&self) -> SlackMessageRenderContext {
-        self.render_context
+    /// The composer a pick inserts into; `None` for a message's picker.
+    pub(crate) fn composer_target(&self) -> Option<&SlackComposerTarget> {
+        match &self.target {
+            SlackReactionPickerTarget::Message { .. } => None,
+            SlackReactionPickerTarget::Composer(target) => Some(target),
+        }
+    }
+
+    pub(crate) fn render_context(&self) -> Option<SlackMessageRenderContext> {
+        match &self.target {
+            SlackReactionPickerTarget::Message { render_context, .. } => Some(*render_context),
+            SlackReactionPickerTarget::Composer(_) => None,
+        }
     }
 
     pub(crate) fn anchor(&self) -> SlackReactionPickerAnchor {
-        self.anchor
+        match &self.target {
+            SlackReactionPickerTarget::Message { anchor, .. } => *anchor,
+            SlackReactionPickerTarget::Composer(_) => SlackReactionPickerAnchor::Composer,
+        }
     }
 }
 
@@ -278,6 +315,13 @@ impl SlackReactionPickerSource {
         Self {
             identity: SlackReactionPickerIdentity::new(target, render_context, anchor),
             reactions,
+        }
+    }
+
+    pub(crate) fn composer(target: SlackComposerTarget) -> Self {
+        Self {
+            identity: SlackReactionPickerIdentity::composer(target),
+            reactions: Arc::default(),
         }
     }
 }

@@ -188,6 +188,7 @@ fn slack_message_header_styled_text(
         font_size: px(font_size).into(),
         line_height: relative(SLACK_LINE_HEIGHT),
         font_weight,
+        font_fallbacks: crate::ui::emoji_font_fallbacks(),
         ..Default::default()
     };
     StyledText::new(text)

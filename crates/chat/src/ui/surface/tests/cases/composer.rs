@@ -23,6 +23,26 @@ fn slack_composer_attachment_and_schedule_flows_are_wired() {
     );
 }
 
+#[gpui::test]
+fn slack_composer_emoji_button_opens_the_full_picker_and_inserts_the_pick() {
+    let _guard = acquire_headless_test_lock();
+    let mut cx = headless_test_context();
+    let (api, _) = slack_test_api();
+    let window = cx
+        .open_window(app_size(), |_, cx| {
+            let workspace = slack_test_board();
+            let api = api.clone();
+            cx.new(move |_| SlackTestApp::from_slack_workspace(workspace, api))
+        })
+        .expect("failed to open slack composer emoji test window");
+    cx.run_until_parked();
+
+    let root = window
+        .root(&mut cx)
+        .expect("failed to access slack composer emoji root");
+    root.update(&mut cx, exercise_slack_composer_emoji_insertion);
+}
+
 fn exercise_slack_composer_attachment_and_schedule_flow(
     app: &mut SlackTestApp,
     cx: &mut Context<SlackTestApp>,
@@ -65,33 +85,20 @@ fn exercise_slack_composer_picker_insertions(
 
 fn exercise_slack_composer_emoji_insertion(app: &mut SlackTestApp, cx: &mut Context<SlackTestApp>) {
     app.root.open_slack_emoji_picker(cx);
-    assert_eq!(
-        app.root
-            .slack_aux_panel(cx)
+    let surface = app.root.ensure_surface(cx);
+    surface.update(cx, |surface, cx| {
+        let picker = surface
+            .slack_reaction_picker
             .as_ref()
-            .and_then(|panel| panel.query.as_deref()),
-        Some("")
-    );
-    for query_part in ["r", "o", "c"] {
-        assert!(app
-            .root
-            .handle_slack_key_down(&text_key_down_event(query_part), cx));
-    }
-    let emoji_label = app
-        .root
-        .slack_aux_panel(cx)
-        .as_ref()
-        .and_then(|panel| panel.sections.first())
-        .and_then(|section| section.rows.first())
-        .map(|row| row.label.clone())
-        .expect("expected emoji picker row");
-    assert!(
-        emoji_label.contains("🚀"),
-        "expected rocket row, got {emoji_label}"
-    );
-    assert!(app
-        .root
-        .handle_slack_key_down(&named_key_down_event("enter"), cx));
+            .expect("the composer's emoji button should open the emoji picker");
+        assert_eq!(
+            picker.identity.composer_target(),
+            Some(&crate::ui::surface::SlackComposerTarget::Main)
+        );
+        surface.set_slack_reaction_picker_query("rocket".to_string(), cx);
+        surface.activate_first_slack_reaction_picker_emoji(cx);
+        assert!(surface.slack_reaction_picker.is_none());
+    });
     assert!(app.root.slack_composer_text(cx).contains("🚀"));
 }
 
@@ -129,10 +136,7 @@ fn exercise_slack_composer_mention_insertion(
     assert!(app
         .root
         .handle_slack_key_down(&named_key_down_event("enter"), cx));
-    assert!(app
-        .root
-        .slack_composer_text(cx)
-        .contains("@Ada Lovelace"));
+    assert!(app.root.slack_composer_text(cx).contains("@Ada Lovelace"));
 }
 
 fn exercise_slack_composer_media_attachments(

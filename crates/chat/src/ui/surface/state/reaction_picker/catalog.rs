@@ -147,11 +147,15 @@ impl SurfaceState {
             .iter()
             .filter(|name| seen.insert(name.as_str()))
             .filter_map(|name| {
-                Self::slack_reaction_picker_emoji_named(name).or_else(|| {
-                    custom_by_name
-                        .get(name.as_str())
-                        .map(|emoji| (*emoji).clone())
-                })
+                Self::slack_reaction_picker_emoji_named(name)
+                    .filter(|_| {
+                        emojis::get_by_shortcode(name).is_none_or(crate::ui::emoji_font_draws)
+                    })
+                    .or_else(|| {
+                        custom_by_name
+                            .get(name.as_str())
+                            .map(|emoji| (*emoji).clone())
+                    })
             })
             .collect::<Vec<_>>();
         SlackPreparedReactionPickerCatalog {

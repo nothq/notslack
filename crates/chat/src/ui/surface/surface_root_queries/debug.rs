@@ -215,7 +215,8 @@ fn chat_reaction_picker_open_state(
     surface
         .slack_reaction_picker
         .as_ref()
-        .map(|picker| {
+        .and_then(|picker| picker.identity.target().map(|target| (picker, target)))
+        .map(|(picker, target)| {
             let active_category_index = if picker.query.is_empty() {
                 picker.category_index
             } else {
@@ -223,17 +224,10 @@ fn chat_reaction_picker_open_state(
             };
             Ok(ChatReactionPickerOpenState {
                 target: ChatReactionPickerTarget {
-                    team_id: picker.identity.target().team_id().to_string(),
-                    conversation_id: picker.identity.target().conversation_id().to_string(),
-                    message_id: picker
-                        .identity
-                        .target()
-                        .message_timestamp()
-                        .as_str()
-                        .to_string(),
-                    thread_parent_message_id: picker
-                        .identity
-                        .target()
+                    team_id: target.team_id().to_string(),
+                    conversation_id: target.conversation_id().to_string(),
+                    message_id: target.message_timestamp().as_str().to_string(),
+                    thread_parent_message_id: target
                         .thread_timestamp()
                         .map(|timestamp| timestamp.as_str().to_string()),
                 },

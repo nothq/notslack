@@ -46,6 +46,7 @@ use std::{
 };
 use time::{Date, Month, OffsetDateTime, UtcOffset, Weekday};
 
+mod add_emoji;
 mod attachments;
 mod audio_clip;
 mod composer;
@@ -64,6 +65,7 @@ mod time_labels;
 mod video_clip;
 mod workspace;
 
+pub(crate) use add_emoji::*;
 pub(crate) use attachments::*;
 pub(crate) use audio_clip::*;
 pub(crate) use composer::*;

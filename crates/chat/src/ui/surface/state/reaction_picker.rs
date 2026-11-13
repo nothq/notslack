@@ -267,6 +267,7 @@ fn slack_standard_reaction_picker_category(
         let (title, groups) = slack_standard_reaction_picker_category_spec(category_index);
         let entries = emojis::iter()
             .filter(|source| groups.contains(&source.group()))
+            .filter(|source| crate::ui::emoji_font_draws(source))
             .filter_map(|source| {
                 SurfaceState::slack_reaction_picker_emoji(source)
                     .map(|emoji| SlackStandardReactionPickerEntry::new(source, emoji))
