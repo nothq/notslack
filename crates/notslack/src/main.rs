@@ -11,6 +11,9 @@ use gpui::{
     WindowBounds, WindowOptions,
 };
 
+#[cfg(target_os = "linux")]
+mod global_menu;
+
 actions!(notslack, [Quit]);
 
 fn main() {
@@ -57,6 +60,8 @@ enum Content {
 struct Notslack {
     content: Content,
     focus: FocusHandle,
+    #[cfg(target_os = "linux")]
+    _global_menu: Option<global_menu::GlobalMenu>,
 }
 
 impl Notslack {
@@ -71,6 +76,8 @@ impl Notslack {
         Self {
             content: connect(),
             focus,
+            #[cfg(target_os = "linux")]
+            _global_menu: global_menu::export_global_menu(window, cx),
         }
     }
 

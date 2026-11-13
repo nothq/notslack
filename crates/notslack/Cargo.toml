@@ -12,5 +12,14 @@ gpui_platform.workspace = true
 media_capture = { package = "notslack-media-capture", path = "../media/capture" }
 theme.workspace = true
 
+[target.'cfg(target_os = "linux")'.dependencies]
+async-channel.workspace = true
+raw-window-handle = "0.6"
+serde.workspace = true
+wayland-backend = { version = "0.3", features = ["client_system"] }
+wayland-client = "0.31"
+wayland-protocols-plasma = { version = "0.3", features = ["client"] }
+zbus = { version = "5", default-features = false, features = ["async-io", "blocking-api"] }
+
 [lints]
 workspace = true
