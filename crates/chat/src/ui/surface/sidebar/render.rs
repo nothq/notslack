@@ -9,5 +9,6 @@ use super::{
 
 mod dms;
 mod finder;
+mod huddle_bar;
 mod items;
 mod shell;

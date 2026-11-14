@@ -38,6 +38,7 @@ mod core;
 mod drafts_sent;
 mod file_metadata;
 mod file_staging;
+mod huddle;
 mod later;
 mod members;
 mod new_message;

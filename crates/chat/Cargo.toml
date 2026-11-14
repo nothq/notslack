@@ -27,6 +27,7 @@ gpui_components = { package = "notslack-gpui-components", path = "../gpui-compon
 iana-time-zone.workspace = true
 image.workspace = true
 local_cache = { package = "notslack-local-cache", path = "../local_cache" }
+huddle = { package = "notslack-huddle", path = "../media/huddle" }
 media_capture = { package = "notslack-media-capture", path = "../media/capture" }
 remote_image_model = { package = "notslack-remote-image-model", path = "../remote-image/model" }
 reqwest.workspace = true

@@ -29,6 +29,7 @@ impl SlackWorkspaceApiCapabilities {
         mutate_preferred_skin_tone: false,
         load_destination_directory: false,
         load_reaction_catalog: false,
+        join_huddles: false,
         open_conversation: false,
         load_conversation: false,
         refresh_conversation: false,

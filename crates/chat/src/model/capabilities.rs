@@ -31,6 +31,8 @@ pub struct SlackWorkspaceApiCapabilities {
     pub mutate_preferred_skin_tone: bool,
     pub load_destination_directory: bool,
     pub load_reaction_catalog: bool,
+    /// Starting, joining and leaving huddles.
+    pub join_huddles: bool,
     pub open_conversation: bool,
     pub load_conversation: bool,
     pub refresh_conversation: bool,

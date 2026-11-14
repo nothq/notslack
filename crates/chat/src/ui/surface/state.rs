@@ -48,6 +48,7 @@ mod file_staging;
 mod files;
 mod history;
 mod home_finder;
+mod huddle_call;
 mod later;
 mod live_conversation;
 mod main_composer;

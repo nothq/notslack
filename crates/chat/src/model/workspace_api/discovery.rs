@@ -184,6 +184,18 @@ macro_rules! slack_workspace_discovery_api {
             Err("Slack reaction catalog loading is unavailable for this workspace runtime"
                 .to_string())
         }
+        fn join_slack_huddle(
+            &self,
+            _request: crate::model::SlackHuddleJoinRequest,
+        ) -> Result<crate::model::SlackHuddleJoinReceipt, String> {
+            Err("Slack huddles are unavailable for this workspace runtime".to_string())
+        }
+        fn leave_slack_huddle(
+            &self,
+            _request: crate::model::SlackHuddleLeaveRequest,
+        ) -> Result<(), String> {
+            Err("Slack huddles are unavailable for this workspace runtime".to_string())
+        }
     };
 }
 

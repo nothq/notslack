@@ -106,13 +106,35 @@ impl SurfaceState {
             })
     }
 
-    fn render_slack_header_huddle_control(&self, cx: &mut Context<Self>) -> Div {
+    fn render_slack_header_huddle_control(&self, cx: &mut Context<Self>) -> Stateful<Div> {
         let palette = slack_palette(self.appearance_mode);
         let border = match self.appearance_mode {
             AppearanceMode::Dark => 0x34363b,
             AppearanceMode::Light => palette.main_border,
         };
+        let in_this_huddle = self.slack_huddle.as_ref().is_some_and(|huddle| {
+            self.slack_workspace()
+                .is_some_and(|workspace| workspace.conversation_id == huddle.conversation_id)
+        });
+        let icon_color = if in_this_huddle {
+            0xffffff
+        } else {
+            palette.main_secondary_text
+        };
         div()
+            .id("slack-header-huddle")
+            .role(gpui::Role::Button)
+            .aria_label(if in_this_huddle {
+                "Leave huddle"
+            } else {
+                "Start a huddle"
+            })
+            .cursor_pointer()
+            .when(in_this_huddle, |this| this.bg(rgb(0x007a5a)))
+            .when(!in_this_huddle, |this| {
+                this.hover(move |style| style.bg(rgb(palette.reaction_picker_hover_bg)))
+            })
+            .on_click(cx.listener(|this, _, _, cx| this.toggle_slack_huddle(cx)))
             .w(px(58.0))
             .h(px(28.0))
             .flex_none()
@@ -129,12 +151,7 @@ impl SurfaceState {
                     .flex()
                     .items_center()
                     .justify_center()
-                    .child(slack_icon(
-                        SlackShellIcon::Huddles,
-                        palette.main_secondary_text,
-                        20.0,
-                        cx,
-                    )),
+                    .child(slack_icon(SlackShellIcon::Huddles, icon_color, 20.0, cx)),
             )
             .child(div().w(px(1.0)).h(px(18.0)).bg(rgb(border)))
             .child(
@@ -146,7 +163,7 @@ impl SurfaceState {
                     .justify_center()
                     .child(slack_icon(
                         SlackShellIcon::ChevronDown,
-                        palette.main_secondary_text,
+                        icon_color,
                         12.0,
                         cx,
                     )),

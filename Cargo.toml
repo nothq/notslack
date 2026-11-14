@@ -6,6 +6,7 @@ members = [
     "crates/gpui-components",
     "crates/local_cache",
     "crates/media/capture",
+    "crates/media/huddle",
     "crates/notslack",
     "crates/remote-image/model",
     "crates/secret_store",

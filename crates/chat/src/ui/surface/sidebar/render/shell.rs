@@ -125,6 +125,9 @@ impl SurfaceState {
                     .when(!home_finder_active, |this| {
                         this.child(self.render_slack_sidebar_sections(workspace, cx))
                     })
+            })
+            .when_some(self.render_slack_huddle_bar(cx), |this, bar| {
+                this.child(bar)
             }))
         .into_any_element()
     }

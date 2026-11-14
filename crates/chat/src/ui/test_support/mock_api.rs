@@ -84,6 +84,7 @@ impl crate::model::SlackWorkspaceApi for MockSlackWorkspaceApi {
             delete_message: false,
             mutate_message_saved_state: false,
             load_reaction_catalog: false,
+            join_huddles: false,
             ..crate::model::SlackWorkspaceApiCapabilities::LIVE
         }
     }

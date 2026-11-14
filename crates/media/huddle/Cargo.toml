@@ -1,0 +1,24 @@
+[package]
+name = "notslack-huddle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "huddle"
+
+[dependencies]
+async-channel.workspace = true
+bytes = "1"
+cpal = "0.15"
+futures-util.workspace = true
+getrandom.workspace = true
+opus = "0.3"
+prost = "0.13"
+rtrb = "0.3"
+tokio.workspace = true
+tokio-tungstenite.workspace = true
+webrtc = "0.12"
+
+[lints]
+workspace = true
