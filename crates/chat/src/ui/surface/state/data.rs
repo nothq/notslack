@@ -275,6 +275,9 @@ pub struct SurfaceStateData {
     pub(crate) slack_conversation_load_profile: Option<SlackConversationLoadProfile>,
     pub(crate) slack_profile_panel: Option<SlackProfilePanelState>,
     pub(crate) slack_self_menu_open: bool,
+    pub(crate) slack_self_menu_notifications_open: bool,
+    pub(crate) slack_self_notifications_pause:
+        Option<crate::ui::surface::state::self_notifications::SlackNotificationsPause>,
     pub(crate) slack_self_status_dialog: Option<crate::ui::surface::SlackSelfStatusDialog>,
     pub(crate) slack_self_status: Option<crate::ui::SlackSelfStatus>,
     pub(crate) slack_self_settings_generation: u64,

@@ -35,6 +35,10 @@ impl SlackLiveWorkspaceLoader {
         self.api.mutate_self_status(status)
     }
 
+    pub fn pause_self_notifications(&self, minutes: Option<u32>) -> Result<bool, String> {
+        self.api.pause_self_notifications(minutes)
+    }
+
     pub fn mutate_self_presence(
         &self,
         presence: crate::model::SlackUserPresence,

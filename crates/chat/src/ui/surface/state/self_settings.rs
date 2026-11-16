@@ -23,6 +23,7 @@ impl SurfaceState {
             return;
         }
         self.slack_self_menu_open = !self.slack_self_menu_open;
+        self.slack_self_menu_notifications_open = false;
         self.slack_self_settings_error = None;
         cx.notify();
     }
@@ -32,6 +33,7 @@ impl SurfaceState {
             return;
         }
         self.slack_self_menu_open = false;
+        self.slack_self_menu_notifications_open = false;
         cx.notify();
     }
 

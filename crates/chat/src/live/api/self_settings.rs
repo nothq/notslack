@@ -6,6 +6,8 @@ use super::SlackApiClient;
 
 const SLACK_PROFILE_SET_METHOD: &str = "users.profile.set";
 const SLACK_PRESENCE_SET_METHOD: &str = "presence.set";
+const SLACK_DND_SET_SNOOZE_METHOD: &str = "dnd.setSnooze";
+const SLACK_DND_END_SNOOZE_METHOD: &str = "dnd.endSnooze";
 
 impl SlackApiClient {
     pub(crate) fn mutate_self_status(
@@ -26,6 +28,24 @@ impl SlackApiClient {
                 format!("Slack {SLACK_PROFILE_SET_METHOD} response missing profile")
             })?,
         )
+    }
+
+    /// Pauses notifications for `minutes`, or resumes them with `None`.
+    /// Returns whether notifications are paused afterwards.
+    pub(crate) fn pause_self_notifications(&self, minutes: Option<u32>) -> Result<bool, String> {
+        match minutes {
+            Some(minutes) => {
+                self.post(
+                    SLACK_DND_SET_SNOOZE_METHOD,
+                    &[("num_minutes", minutes.max(1).to_string())],
+                )?;
+                Ok(true)
+            }
+            None => {
+                self.post(SLACK_DND_END_SNOOZE_METHOD, &[])?;
+                Ok(false)
+            }
+        }
     }
 
     pub(crate) fn mutate_self_presence(

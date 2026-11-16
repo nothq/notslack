@@ -16,7 +16,7 @@ impl SurfaceState {
         div().size(px(36.0)).rounded(px(12.0))
     }
 
-    pub(super) fn render_slack_self_badge(&self) -> Div {
+    pub(in crate::ui::surface::root) fn render_slack_self_badge(&self) -> Div {
         let (_, _, avatar_label, avatar_image_url) = self.slack_self_identity();
         if let Some(image) = avatar_image_url
             .as_deref()

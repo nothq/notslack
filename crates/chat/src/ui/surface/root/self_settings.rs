@@ -7,10 +7,9 @@ use gpui::{
 use gpui_components::backdrop::{dismissible_backdrop, BackdropDismissal};
 
 use crate::ui::surface::{
-    slack_palette, SlackSelfStatusDialog, SlackSurfaceAction, SlackSurfaceActionButton,
-    SurfaceState,
+    slack_palette, SlackSelfStatusDialog, SlackSurfaceActionButton, SurfaceState,
 };
-use crate::ui::{alpha, SlackUserPresence, SlackWorkspace};
+use crate::ui::{alpha, SlackWorkspace};
 
 impl SurfaceState {
     pub(super) fn render_slack_self_menu_layer(
@@ -44,140 +43,6 @@ impl SurfaceState {
             .child(backdrop)
             .child(self.render_slack_self_menu(workspace, presence, cx))
             .into_any_element()
-    }
-
-    fn render_slack_self_menu(
-        &self,
-        workspace: &SlackWorkspace,
-        presence: Option<SlackUserPresence>,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        self.slack_self_menu_container(cx)
-            .child(self.slack_self_menu_identity(workspace))
-            .when_some(self.slack_self_status.as_ref(), |this, status| {
-                this.child(
-                    div()
-                        .px(px(14.0))
-                        .pb(px(6.0))
-                        .text_size(px(12.0))
-                        .text_color(rgb(0xb9babd))
-                        .child(format!("{} {}", status.emoji(), status.text())),
-                )
-            })
-            .child(self.slack_self_menu_action(
-                "slack-self-update-status",
-                "Update your status",
-                SurfaceState::open_slack_self_status_dialog,
-                cx,
-            ))
-            .child(self.slack_self_menu_action(
-                "slack-self-toggle-presence",
-                match presence {
-                    Some(SlackUserPresence::Away) => "Set yourself as active",
-                    _ => "Set yourself as away",
-                },
-                SurfaceState::toggle_slack_self_presence,
-                cx,
-            ))
-            .child(self.slack_self_menu_action(
-                "slack-self-view-profile",
-                "View profile",
-                |this, cx| {
-                    this.close_slack_self_menu(cx);
-                    this.open_slack_self_panel(cx);
-                },
-                cx,
-            ))
-            .when_some(self.slack_self_settings_error.as_deref(), |this, error| {
-                this.child(
-                    div()
-                        .px(px(14.0))
-                        .pt(px(6.0))
-                        .text_size(px(12.0))
-                        .text_color(rgb(0xe01e5a))
-                        .child(error.to_string()),
-                )
-            })
-    }
-
-    fn slack_self_menu_container(&self, cx: &mut Context<Self>) -> gpui::Stateful<gpui::Div> {
-        div()
-            .id("slack-self-menu")
-            .role(Role::Menu)
-            .aria_label("Your account")
-            .absolute()
-            .left(px(62.0))
-            .bottom(px(18.0))
-            .w(px(274.0))
-            .rounded(px(8.0))
-            .border_1()
-            .border_color(rgb(0x3a3d42))
-            .bg(rgb(0x222529))
-            .shadow(vec![BoxShadow {
-                color: alpha(0x000000, 0.42),
-                offset: point(px(0.0), px(6.0)),
-                blur_radius: px(22.0),
-                spread_radius: px(0.0),
-                inset: false,
-            }])
-            .py(px(8.0))
-            .occlude()
-            .on_mouse_down(
-                MouseButton::Left,
-                cx.listener(|_: &mut Self, _: &MouseDownEvent, _, cx| {
-                    cx.stop_propagation();
-                }),
-            )
-    }
-
-    fn slack_self_menu_identity(&self, workspace: &SlackWorkspace) -> gpui::Div {
-        div()
-            .px(px(14.0))
-            .pb(px(8.0))
-            .text_size(px(15.0))
-            .font_weight(FontWeight::BOLD)
-            .text_color(rgb(0xf8f8f8))
-            .child(
-                workspace
-                    .self_display_name
-                    .clone()
-                    .unwrap_or_else(|| "You".to_string()),
-            )
-    }
-
-    fn slack_self_menu_action(
-        &self,
-        id: &'static str,
-        label: &'static str,
-        action: SlackSurfaceAction,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        div()
-            .id(id)
-            .role(Role::MenuItem)
-            .aria_label(label)
-            .focusable()
-            .tab_stop(true)
-            .h(px(36.0))
-            .px(px(14.0))
-            .cursor_pointer()
-            .flex()
-            .items_center()
-            .text_size(px(14.0))
-            .text_color(rgb(0xf8f8f8))
-            .hover(|style| style.bg(rgb(0x1264a3)))
-            .focus_visible(|style| style.bg(rgb(0x1264a3)))
-            .on_click(cx.listener(move |this, _, _, cx| action(this, cx)))
-            .on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
-                if matches!(event.keystroke.key.as_str(), "enter" | "space")
-                    && !event.keystroke.modifiers.modified()
-                {
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    action(this, cx);
-                }
-            }))
-            .child(label)
     }
 
     pub(super) fn render_slack_self_status_layer(&self, cx: &mut Context<Self>) -> AnyElement {

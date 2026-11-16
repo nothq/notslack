@@ -17,6 +17,7 @@ mod rail;
 mod rail_surfaces;
 mod resize_drag;
 mod search;
+mod self_menu;
 mod self_settings;
 mod sidebar_section;
 

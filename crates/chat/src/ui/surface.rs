@@ -10,9 +10,8 @@ use gpui_components::text_input::TextInput;
 use crate::ui::{
     alpha, build_slack_conversation_remote_images, build_slack_message_remote_images,
     build_slack_remote_image_from_bytes, build_slack_remote_image_from_parts,
-    build_slack_remote_images,
-    build_slack_shell_remote_images, build_slack_sidebar_remote_images, div, img,
-    keystroke_input_text, list, point, px, relative, rgb, slack_remote_image_cache_key,
+    build_slack_remote_images, build_slack_shell_remote_images, build_slack_sidebar_remote_images,
+    div, img, keystroke_input_text, list, point, px, relative, rgb, slack_remote_image_cache_key,
     spawn_background_task_for_entity, spawn_timer_task_for_entity, svg_from_body, svg_with_paths,
     AnyElement, App, AppContext, AppearanceMode, BoxShadow, Context, Date, Div, Entity,
     FluentBuilder, FocusHandle, Focusable, FontWeight, IconAsset, Image, InteractiveElement,
@@ -129,11 +128,11 @@ pub(crate) use state::{
     load_slack_prepared_upload_files_from_paths, load_slack_upload_files_from_paths,
     SlackDateJumpCalendarCell, SlackDateJumpCalendarCellStatus, SlackDateJumpMenuAction,
     SlackDateJumpMenuState, SlackDateJumpOverlay, SlackDateJumpPickerState, SlackDateJumpRequest,
-    SlackMessageNavigationHighlight, SlackMessageNavigationRequest, SlackScheduleAnchor,
-    SlackScheduleCalendarCell, SlackScheduleCalendarCellStatus, SlackScheduleCustomState,
-    SlackScheduleDatePickerState, SlackScheduleMenuState, SlackScheduleNestedPicker,
-    SlackScheduleOverlay, SlackScheduleOverlayState, SlackScheduleTimeOption,
-    SlackScheduleTimePickerState,
+    SlackMessageNavigationHighlight, SlackMessageNavigationRequest, SlackNotificationPausePreset,
+    SlackScheduleAnchor, SlackScheduleCalendarCell, SlackScheduleCalendarCellStatus,
+    SlackScheduleCustomState, SlackScheduleDatePickerState, SlackScheduleMenuState,
+    SlackScheduleNestedPicker, SlackScheduleOverlay, SlackScheduleOverlayState,
+    SlackScheduleTimeOption, SlackScheduleTimePickerState,
 };
 pub use surface_event_source::ChatEventSource;
 pub(crate) use surface_state_core::SurfaceStateConfig;
