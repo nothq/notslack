@@ -3,7 +3,6 @@ mod history_window;
 
 use std::{thread, time::Instant};
 
-use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::model::SlackMessageTimestamp;
@@ -26,14 +25,6 @@ use super::{
 };
 
 pub(super) use history_window::SlackInitialHistoryWindow;
-
-#[derive(Deserialize)]
-struct SlackDndInfoPayload {
-    #[serde(default)]
-    dnd_enabled: bool,
-    #[serde(default)]
-    snooze_enabled: bool,
-}
 
 impl SlackLiveWorkspaceLoader {
     pub(super) fn load_conversation_history_page_payload(
@@ -194,9 +185,9 @@ impl SlackLiveWorkspaceLoader {
         let payload = self
             .api
             .post("dnd.info", &[("user", user_id.to_string())])?;
-        let status = serde_json::from_value::<SlackDndInfoPayload>(payload)
+        let status = serde_json::from_value::<crate::live::dnd::SlackDndState>(payload)
             .map_err(|error| format!("failed to decode Slack dnd.info response: {error}"))?;
-        let notifications_paused = status.dnd_enabled || status.snooze_enabled;
+        let notifications_paused = status.is_active_now();
         self.dnd_status_cache
             .lock()
             .map_err(|_| "slack dnd status cache mutex poisoned".to_string())?

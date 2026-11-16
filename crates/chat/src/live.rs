@@ -4,6 +4,7 @@ mod archive_runtime;
 mod cache;
 mod connection;
 mod conversation;
+mod dnd;
 mod events;
 mod internal_sidebar;
 mod local_file;

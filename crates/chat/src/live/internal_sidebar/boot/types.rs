@@ -37,11 +37,7 @@ pub(super) struct SlackBootSelfUser {
     pub(super) is_admin: bool,
 }
 
-#[derive(Debug, Deserialize)]
-pub(super) struct SlackBootDnd {
-    pub(super) dnd_enabled: bool,
-    pub(super) snooze_enabled: bool,
-}
+pub(super) type SlackBootDnd = crate::live::dnd::SlackDndState;
 
 #[derive(Debug, Default, Deserialize)]
 pub(in crate::live::internal_sidebar) struct SlackClientCountsResponse {

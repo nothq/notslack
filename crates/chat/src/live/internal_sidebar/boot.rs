@@ -83,7 +83,7 @@ impl<'a> SlackBootClient<'a> {
             .dnd
             .as_ref()
             .ok_or_else(|| "Slack client.userBoot response missing dnd".to_string())?;
-        let self_notifications_paused = dnd.dnd_enabled || dnd.snooze_enabled;
+        let self_notifications_paused = dnd.is_active_now();
         let sidebar_users = self.load_direct_message_users(SlackDirectMessageUserLoad {
             boot: &boot,
             counts: &counts,
