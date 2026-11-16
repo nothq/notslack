@@ -69,6 +69,7 @@ mod permalink;
 mod pins;
 mod presence;
 mod profile;
+mod profile_dm;
 mod query;
 mod reaction_picker;
 mod reactions;
