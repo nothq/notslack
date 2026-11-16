@@ -117,7 +117,25 @@ pub(super) fn slack_shell_from_payloads(
         self_timezone_id: timezone.id.clone(),
         self_timezone_label: self_user
             .and_then(|user| super::super::util::string_at(user, &["tz_label"])),
+        self_can_upgrade_plan: self_can_upgrade_plan(team_info, self_user),
     }
+}
+
+/// Slack prompts only owners and admins to upgrade, and only below
+/// Business+: on Free (plan `""`) or Pro (`std`). An unknown plan or role
+/// never shows the prompt.
+fn self_can_upgrade_plan(team_info: &Value, self_user: Option<&Value>) -> bool {
+    let manages_workspace = self_user.is_some_and(|user| {
+        ["is_owner", "is_primary_owner", "is_admin"]
+            .iter()
+            .any(|role| user.get(role).and_then(Value::as_bool) == Some(true))
+    });
+    let below_business_plus = team_info
+        .get("team")
+        .and_then(|team| team.get("plan"))
+        .and_then(Value::as_str)
+        .is_some_and(|plan| matches!(plan, "" | "std"));
+    manages_workspace && below_business_plus
 }
 
 pub(super) fn slack_sidebar_from_payloads(
@@ -361,4 +379,30 @@ fn slack_rail_badges(
 
 fn positive_u32(value: usize) -> Option<u32> {
     u32::try_from(value).ok().filter(|value| *value > 0)
+}
+
+#[cfg(test)]
+mod upgrade_prompt_tests {
+    use serde_json::json;
+
+    use super::self_can_upgrade_plan;
+
+    #[test]
+    fn only_admins_below_business_plus_are_prompted_to_upgrade() {
+        let pro = json!({"team": {"plan": "std"}});
+        let admin = json!({"is_admin": true});
+        let member = json!({"is_admin": false, "is_owner": false});
+        assert!(self_can_upgrade_plan(&pro, Some(&admin)));
+        assert!(self_can_upgrade_plan(
+            &json!({"team": {"plan": ""}}),
+            Some(&admin)
+        ));
+        assert!(!self_can_upgrade_plan(&pro, Some(&member)));
+        assert!(!self_can_upgrade_plan(&pro, None));
+        assert!(!self_can_upgrade_plan(
+            &json!({"team": {"plan": "plus"}}),
+            Some(&admin)
+        ));
+        assert!(!self_can_upgrade_plan(&json!({"team": {}}), Some(&admin)));
+    }
 }

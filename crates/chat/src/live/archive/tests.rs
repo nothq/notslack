@@ -54,6 +54,7 @@ fn unnormalized_archive_workspace() -> SlackWorkspace {
         self_avatar_image_mimetype: None,
         self_timezone_id: None,
         self_timezone_label: None,
+        self_can_upgrade_plan: false,
         channel_name: "design".to_string(),
         channel_topic: String::new(),
         member_count: Some(8),

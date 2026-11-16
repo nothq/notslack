@@ -41,6 +41,7 @@ impl SlackWorkspace {
             self_avatar_image_mimetype: self.self_avatar_image_mimetype.clone(),
             self_timezone_id: self.self_timezone_id.clone(),
             self_timezone_label: self.self_timezone_label.clone(),
+            self_can_upgrade_plan: self.self_can_upgrade_plan,
         }
     }
 
@@ -107,6 +108,7 @@ impl SlackWorkspace {
         self.self_avatar_image_mimetype = shell.self_avatar_image_mimetype;
         self.self_timezone_id = shell.self_timezone_id;
         self.self_timezone_label = shell.self_timezone_label;
+        self.self_can_upgrade_plan = shell.self_can_upgrade_plan;
     }
 
     pub fn apply_sidebar_snapshot(&mut self, sidebar: SlackSidebarSnapshot) -> bool {
@@ -235,6 +237,7 @@ fn workspace_from_snapshots(
         self_avatar_image_mimetype: shell.self_avatar_image_mimetype,
         self_timezone_id,
         self_timezone_label: shell.self_timezone_label,
+        self_can_upgrade_plan: shell.self_can_upgrade_plan,
         channel_name: conversation.channel_name,
         channel_topic: conversation.channel_topic,
         member_count: conversation.member_count,

@@ -83,6 +83,7 @@ pub fn slack_test_workspace_with_sections(
         self_avatar_image_mimetype: None,
         self_timezone_id: None,
         self_timezone_label: None,
+        self_can_upgrade_plan: false,
         channel_name: channel_name.to_string(),
         channel_topic: "Shared build lane".to_string(),
         member_count: Some(8),
@@ -134,6 +135,7 @@ pub fn slack_test_workspace_with_channel_count(channel_count: usize) -> SlackWor
         self_avatar_image_mimetype: None,
         self_timezone_id: None,
         self_timezone_label: None,
+        self_can_upgrade_plan: false,
         channel_name: "design".to_string(),
         channel_topic: "Shared build lane".to_string(),
         member_count: Some(8),
@@ -194,12 +196,7 @@ fn slack_test_message(index: usize, channel_name: &str) -> SlackMessage {
     SlackMessage {
         id: format!("1700000000.{:06}", index + 1),
         client_message_id: None,
-        author: if is_ada {
-            "Ada Lovelace"
-        } else {
-            "Acme"
-        }
-        .to_string(),
+        author: if is_ada { "Ada Lovelace" } else { "Acme" }.to_string(),
         timestamp: format!("9:{:02} PM", (27 + index) % 60),
         user_id: Some(if is_ada { "U_ADA" } else { "U_ACME" }.to_string()),
         avatar_label: Some(if is_ada { "IT" } else { "PB" }.to_string()),

@@ -27,6 +27,7 @@ fn workspace_with_sidebar_item(unread: bool, count: Option<u32>) -> SlackWorkspa
         self_avatar_image_mimetype: None,
         self_timezone_id: None,
         self_timezone_label: None,
+        self_can_upgrade_plan: false,
         channel_name: "Grace".to_string(),
         channel_topic: String::new(),
         member_count: None,

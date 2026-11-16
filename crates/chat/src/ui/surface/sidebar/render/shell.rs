@@ -110,9 +110,10 @@ impl SurfaceState {
             .when(self.slack_active_rail_view != SlackRailView::Dms, |this| {
                 this.child(self.render_slack_sidebar_header(workspace, cx))
                     .when(self.slack_active_rail_view == SlackRailView::Home, |this| {
-                        this.when(!self.slack_upgrade_card_dismissed, |this| {
-                            this.child(self.render_slack_upgrade_card(cx))
-                        })
+                        this.when(
+                            workspace.self_can_upgrade_plan && !self.slack_upgrade_card_dismissed,
+                            |this| this.child(self.render_slack_upgrade_card(cx)),
+                        )
                         .child(self.render_slack_home_finder_search(cx))
                     })
                     .when(

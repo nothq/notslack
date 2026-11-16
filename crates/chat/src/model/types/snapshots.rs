@@ -42,6 +42,10 @@ pub struct SlackWorkspace {
     pub self_timezone_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub self_timezone_label: Option<String>,
+    /// Whether this person can upgrade the workspace's plan, which is when
+    /// Slack prompts them to.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub self_can_upgrade_plan: bool,
     pub channel_name: String,
     pub channel_topic: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -103,6 +107,10 @@ pub struct SlackShellSnapshot {
     pub self_timezone_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub self_timezone_label: Option<String>,
+    /// Whether this person can upgrade the workspace's plan, which is when
+    /// Slack prompts them to.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub self_can_upgrade_plan: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
