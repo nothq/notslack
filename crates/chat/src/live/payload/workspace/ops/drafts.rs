@@ -139,7 +139,7 @@ pub(in crate::live::payload::workspace) fn delete_draft(
 ) -> Result<(), String> {
     let client_mutation_timestamp =
         SlackDraftClientMutationTimestamp::from_loaded_revision(target.revision());
-    api.post(
+    let deleted = api.post(
         "drafts.delete",
         &[
             (
@@ -152,8 +152,21 @@ pub(in crate::live::payload::workspace) fn delete_draft(
                 file_deletion.preserves_files().to_string(),
             ),
         ],
-    )?;
-    Ok(())
+    );
+    match deleted {
+        Ok(_) => Ok(()),
+        Err(error) if draft_already_gone(&error) => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
+/// Slack answers these when the draft no longer exists, as when sending the
+/// message already removed it; there is nothing left to delete. A real
+/// conflict comes back as `draft_has_conflict` instead.
+fn draft_already_gone(error: &str) -> bool {
+    ["draft_not_found", "draft_delete_invalid"]
+        .iter()
+        .any(|code| error == format!("Slack API drafts.delete failed: {code}"))
 }
 
 enum SlackDraftMutation<'a> {
@@ -317,4 +330,22 @@ fn observe_scheduled_draft_mutation(
 
 fn is_false(value: &bool) -> bool {
     !value
+}
+
+#[cfg(test)]
+mod tests {
+    use super::draft_already_gone;
+
+    #[test]
+    fn deleting_a_draft_that_is_already_gone_is_not_an_error() {
+        assert!(draft_already_gone(
+            "Slack API drafts.delete failed: draft_delete_invalid"
+        ));
+        assert!(draft_already_gone(
+            "Slack API drafts.delete failed: draft_not_found"
+        ));
+        assert!(!draft_already_gone(
+            "Slack API drafts.delete failed: draft_has_conflict"
+        ));
+    }
 }
