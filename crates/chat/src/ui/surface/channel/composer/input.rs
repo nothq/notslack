@@ -2,9 +2,12 @@ use std::rc::Rc;
 
 use gpui::SharedString;
 use gpui_components::text_input::{
-    TextInputAction, TextInputChange, TextInputEnterBehavior, TextInputMode, TextInputProps,
-    TextInputStyle,
+    TextInputAction, TextInputChange, TextInputEnterBehavior, TextInputMode,
+    TextInputPreMutationAction, TextInputPreMutationActionHandler, TextInputPreMutationDecision,
+    TextInputProps, TextInputStyle,
 };
+
+use crate::ui::surface::SlackPastedAttachment;
 
 use super::{
     alpha, px, rgb, slack_palette, Context, SurfaceState, SLACK_COMPOSER_INPUT_HEIGHT,
@@ -65,6 +68,30 @@ impl SurfaceState {
             .on_escape(callbacks.on_escape)
             .on_focus(callbacks.on_focus)
             .on_layout_change(callbacks.on_layout_change)
+            .on_pre_mutation_action(Self::slack_composer_on_pre_mutation(cx))
+    }
+
+    /// A paste holding an image or copied files attaches them instead of
+    /// pasting text, as Slack's composer does.
+    fn slack_composer_on_pre_mutation(cx: &mut Context<Self>) -> TextInputPreMutationActionHandler {
+        let surface = cx.entity().downgrade();
+        Rc::new(move |action, _window, cx| {
+            let TextInputPreMutationAction::Paste { item, .. } = action else {
+                return TextInputPreMutationDecision::Continue;
+            };
+            let Some(pasted) = SlackPastedAttachment::from_clipboard(&item) else {
+                return TextInputPreMutationDecision::Continue;
+            };
+            surface
+                .update(cx, |surface, cx| {
+                    if let Err(error) = surface.attach_slack_pasted_files(pasted, cx) {
+                        surface.slack_error = Some(error);
+                        cx.notify();
+                    }
+                })
+                .ok();
+            TextInputPreMutationDecision::Handled
+        })
     }
 
     fn slack_composer_input_callbacks(

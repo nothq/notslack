@@ -19,7 +19,8 @@ pub(super) fn ensure_selectable_text_clipboard(cx: &mut App) {
 }
 
 fn handle_copy_keystroke(event: &KeystrokeEvent, window: &mut Window, cx: &mut App) {
-    if event.keystroke.modifiers != gpui::Modifiers::command()
+    // Cmd+C on macOS, Ctrl+C elsewhere.
+    if event.keystroke.modifiers != gpui::Modifiers::secondary_key()
         || event.keystroke.key.as_str() != "c"
     {
         return;
