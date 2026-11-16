@@ -161,6 +161,17 @@ fn slack_rich_text_inline(
                 .unwrap_or(false),
             style,
         }),
+        // An app's link chip, such as a Jira issue pasted into a message.
+        "attachment_mention" => Some(SlackRichTextInline::Link {
+            url: element.get("url").and_then(Value::as_str)?.to_string(),
+            label: element
+                .get("text")
+                .and_then(Value::as_str)
+                .filter(|label| !label.is_empty())
+                .map(str::to_string),
+            unsafe_url: false,
+            style,
+        }),
         "user" => slack_rich_text_user(element, users, style),
         "channel" => slack_rich_text_channel(element, sidebar_snapshot, style),
         "broadcast" => slack_rich_text_broadcast(element, style),
@@ -277,4 +288,32 @@ fn slack_rich_text_emoji_unicode(value: &str) -> Option<String> {
                 .and_then(char::from_u32)
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use serde_json::json;
+
+    use super::slack_rich_text_inline;
+    use crate::model::SlackRichTextInline;
+
+    #[test]
+    fn app_link_chips_render_as_links() {
+        let element = json!({
+            "type": "attachment_mention",
+            "url": "https://example.atlassian.net/browse/GE-1",
+            "text": "Update the prospect form",
+            "app_id": "A1",
+            "product_name": "Jira Cloud",
+        });
+        let Some(SlackRichTextInline::Link { url, label, .. }) =
+            slack_rich_text_inline(&element, &HashMap::new(), None)
+        else {
+            panic!("an attachment mention should become a link");
+        };
+        assert_eq!(url, "https://example.atlassian.net/browse/GE-1");
+        assert_eq!(label.as_deref(), Some("Update the prospect form"));
+    }
 }
