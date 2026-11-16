@@ -31,6 +31,7 @@ pub(super) struct SlackMessageBodyTextContext<'a> {
 
 fn render_slack_message_body_block_text(
     block: &SlackMessageBodyBlock,
+    trailing_edited_label: Option<&SharedString>,
     text_context: SlackMessageBodyTextContext<'_>,
     cx: &mut Context<SurfaceState>,
 ) -> AnyElement {
@@ -38,9 +39,9 @@ fn render_slack_message_body_block_text(
         style,
         selection: selection_context,
     } = text_context;
-    let styled_text = styled_slack_message_body_block(block, style);
+    let (text, styled_text) = styled_slack_message_body_block(block, trailing_edited_label, style);
     let selectable_text = slack_message_selectable_text(
-        block.text.clone(),
+        text,
         styled_text,
         block.element_ids.for_context(style.render_context),
         selection_context,
@@ -204,26 +205,9 @@ fn slack_prepared_message_block_content(
         | SlackMessageBodyBlockKind::Preformatted
         | SlackMessageBodyBlockKind::BlockKitHeader => {}
     }
-    let text = render_slack_message_body_block_text(block, text_context, cx);
-    let Some(edited_label) = trailing_edited_label else {
-        return text;
-    };
-    let palette = slack_palette(style.appearance_mode);
-    div()
-        .min_w(px(0.0))
-        .flex()
-        .flex_wrap()
-        .items_baseline()
-        .gap(px(4.0))
-        .child(text)
-        .child(
-            div()
-                .text_size(px(13.0))
-                .line_height(px(22.0))
-                .text_color(rgb(palette.main_secondary_text))
-                .child(edited_label.clone()),
-        )
-        .into_any_element()
+    // "(edited)" follows the last word, as in Slack, rather than the widest
+    // line.
+    render_slack_message_body_block_text(block, trailing_edited_label, text_context, cx)
 }
 
 fn slack_prepared_message_block(

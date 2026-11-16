@@ -40,20 +40,56 @@ struct SlackMessageFormattedText<'a> {
     code_font_family: &'a SharedString,
 }
 
+/// The block's text and its styling, with `trailing_label` (such as
+/// "(edited)") appended in the secondary colour.
 pub(super) fn styled_slack_message_body_block(
     block: &SlackMessageBodyBlock,
+    trailing_label: Option<&SharedString>,
     style: SlackPreparedMessageBodyStyle,
-) -> StyledText {
-    styled_slack_message_text(
-        SlackMessageFormattedText {
-            text: &block.text,
-            styles: &block.styles,
-            code_ranges: &block.code_ranges,
-            code_font_family: &block.code_font_family,
-        },
-        block.kind,
-        style,
-    )
+) -> (SharedString, StyledText) {
+    let Some(label) = trailing_label else {
+        let styled = styled_slack_message_text(
+            SlackMessageFormattedText {
+                text: &block.text,
+                styles: &block.styles,
+                code_ranges: &block.code_ranges,
+                code_font_family: &block.code_font_family,
+            },
+            block.kind,
+            style,
+        );
+        return (block.text.clone(), styled);
+    };
+    let label_start = block.text.len() + 1;
+    let text: SharedString = format!("{} {label}", block.text).into();
+    let mut styles = block.styles.to_vec();
+    styles.push(crate::ui::surface::SlackMessageBodyStyleRange {
+        range: label_start..text.len(),
+        style: SlackMessageTextStyle::default(),
+    });
+    let default_style =
+        slack_message_default_text_style(block.kind, &block.code_font_family, style);
+    let palette = slack_palette(style.appearance_mode);
+    let styled = StyledText::new(text.clone())
+        .with_default_highlights(
+            &default_style,
+            styles.iter().map(|range| {
+                let mut highlight =
+                    slack_message_highlight(range.style, block.kind, style.appearance_mode);
+                if range.range.start >= label_start {
+                    highlight.color = Some(rgb(palette.main_secondary_text).into());
+                }
+                (range.range.clone(), highlight)
+            }),
+        )
+        .with_font_family_overrides(
+            block
+                .code_ranges
+                .iter()
+                .cloned()
+                .map(|range| (range, block.code_font_family.clone())),
+        );
+    (text, styled)
 }
 
 pub(super) fn styled_slack_message_body_text(

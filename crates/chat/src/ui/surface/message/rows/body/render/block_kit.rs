@@ -24,7 +24,7 @@ pub(super) fn render_slack_block_kit_section(
     let style = text_context.style;
     let base_id = block.element_ids.for_context(style.render_context);
     let text = (!block.text.is_empty())
-        .then(|| render_slack_message_body_block_text(block, text_context, cx));
+        .then(|| render_slack_message_body_block_text(block, None, text_context, cx));
     let fields = (!block.fields.is_empty()).then(|| {
         div()
             .max_w(px(600.0))
