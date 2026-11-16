@@ -27,6 +27,11 @@ pub(super) fn group_message_labels(
     visible_group_messages(boot, counts)?
         .into_iter()
         .map(|conversation| {
+            // A group DM someone named ("Mobile PH") shows that name, as in
+            // Slack; others are labelled by their members.
+            if let Some(name) = custom_group_message_name(conversation) {
+                return Ok((conversation.id.clone(), name));
+            }
             let mut participants = conversation
                 .members
                 .iter()
@@ -69,6 +74,17 @@ pub(super) fn group_message_labels(
             Ok((conversation.id.clone(), label))
         })
         .collect()
+}
+
+/// The name of a group DM someone named. Slack names the rest itself as
+/// `mpdm-alice--bob-1`.
+fn custom_group_message_name(conversation: &SlackBootConversation) -> Option<String> {
+    conversation
+        .name
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty() && !name.starts_with("mpdm-"))
+        .map(str::to_string)
 }
 
 fn visible_group_messages<'a>(
@@ -141,4 +157,32 @@ pub(super) fn external_team_ids_by_conversation(
             ))
         })
         .collect()
+}
+
+#[cfg(test)]
+mod custom_name_tests {
+    use super::custom_group_message_name;
+    use crate::live::internal_sidebar::boot::types::SlackBootConversation;
+
+    fn conversation(name: Option<&str>) -> SlackBootConversation {
+        serde_json::from_value(serde_json::json!({
+            "id": "G1",
+            "is_mpim": true,
+            "name": name,
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn named_group_dms_keep_their_name_and_others_use_members() {
+        assert_eq!(
+            custom_group_message_name(&conversation(Some("Mobile PH"))).as_deref(),
+            Some("Mobile PH")
+        );
+        assert_eq!(
+            custom_group_message_name(&conversation(Some("mpdm-ben--jay-1"))),
+            None
+        );
+        assert_eq!(custom_group_message_name(&conversation(None)), None);
+    }
 }

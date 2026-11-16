@@ -82,6 +82,9 @@ pub(super) struct SlackDmChannel {
     pub(super) last_read: Option<String>,
     #[serde(default)]
     pub(super) is_mpim: bool,
+    /// Set when someone named the group DM; otherwise Slack's `mpdm-…`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(super) name: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]

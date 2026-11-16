@@ -208,6 +208,15 @@ fn dm_label(
             .or_else(|| dm.channel.user.clone())
             .unwrap_or_else(|| dm.id.clone()),
         SlackConversationKind::GroupMessage => {
+            if let Some(name) = dm
+                .channel
+                .name
+                .as_deref()
+                .map(str::trim)
+                .filter(|name| !name.is_empty() && !name.starts_with("mpdm-"))
+            {
+                return name.to_string();
+            }
             let label = participants
                 .iter()
                 .map(|participant| participant.label.as_str())
