@@ -60,6 +60,11 @@ impl SurfaceState {
             .on_submit(Self::slack_thread_input_on_submit(cx))
             .on_escape(Self::slack_thread_input_on_escape(cx))
             .on_focus(Self::slack_thread_input_on_focus(cx))
+            .on_key_down_before_default(Self::slack_composer_suggestion_keys(cx, |surface| {
+                surface
+                    .slack_thread_panel_reply_composer_target()
+                    .map(crate::ui::surface::SlackComposerTarget::Reply)
+            }))
     }
 
     fn slack_thread_input_on_change(cx: &mut Context<Self>) -> TextInputChange {

@@ -250,3 +250,139 @@ fn queue_slack_upload_message(app: &mut SlackTestApp, cx: &mut Context<SlackTest
     );
     app.root.send_slack_message(cx);
 }
+
+#[gpui::test]
+fn slack_typed_mention_becomes_a_mention_on_enter() {
+    use gpui::{AppContext as _, EntityInputHandler};
+    let _guard = acquire_headless_test_lock();
+    let mut cx = headless_test_context();
+    let (api, _) = slack_test_api();
+    let window = cx
+        .open_window(app_size(), |_, cx| {
+            let workspace = slack_test_board();
+            let api = api.clone();
+            cx.new(move |_| SlackTestApp::from_slack_workspace(workspace, api))
+        })
+        .expect("failed to open slack mention test window");
+    cx.run_until_parked();
+    let root = window.root(&mut cx).expect("mention test root");
+    let surface = root.update(&mut cx, |app, cx| app.root.ensure_surface(cx));
+    let input = surface.update(&mut cx, |surface, _| surface.slack_composer_input.clone());
+    surface.update(&mut cx, |surface, cx| {
+        surface.slack_composer_focused = true;
+        cx.notify();
+    });
+    cx.run_until_parked();
+    for character in ["@", "A", "d"] {
+        cx.update_window(window.into(), |_, window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_text_in_range(None, character, window, cx);
+            });
+        })
+        .unwrap();
+        cx.run_until_parked();
+    }
+    let (panel_rows, text) = surface.update(&mut cx, |surface, _| {
+        (
+            surface.slack_aux_panel.as_ref().map(|panel| {
+                panel
+                    .sections
+                    .iter()
+                    .flat_map(|section| section.rows.iter())
+                    .map(|row| format!("{} {:?}", row.label, row.action.is_some()))
+                    .collect::<Vec<_>>()
+            }),
+            surface.slack_composer_text.clone(),
+        )
+    });
+    assert_eq!(text, "@Ad");
+    assert!(
+        panel_rows.as_ref().is_some_and(|rows| !rows.is_empty()),
+        "typing @Ad should open the mention list, got {panel_rows:?}"
+    );
+    // Enter: the composer's submit picks the first suggestion.
+    let picked = surface.update(&mut cx, |surface, cx| {
+        surface.activate_first_slack_composer_aux_action_if_open(
+            &crate::ui::surface::SlackComposerTarget::Main,
+            cx,
+        )
+    });
+    assert!(picked, "Enter should go to the mention list");
+    cx.run_until_parked();
+    let (text, has_mention) = surface.update(&mut cx, |surface, _| {
+        (
+            surface.slack_composer_text.clone(),
+            surface
+                .slack_composer_document
+                .borrow()
+                .has_rendered_highlights(),
+        )
+    });
+    assert!(
+        has_mention && text != "@Ad",
+        "Enter should replace @Ad with a mention; text is {text:?}, rows were {panel_rows:?}"
+    );
+}
+
+#[gpui::test]
+fn slack_down_arrow_picks_the_next_mention_suggestion() {
+    use gpui::{AppContext as _, EntityInputHandler};
+    let _guard = acquire_headless_test_lock();
+    let mut cx = headless_test_context();
+    let (api, _) = slack_test_api();
+    let window = cx
+        .open_window(app_size(), |_, cx| {
+            let workspace = slack_test_board();
+            let api = api.clone();
+            cx.new(move |_| SlackTestApp::from_slack_workspace(workspace, api))
+        })
+        .expect("failed to open slack mention arrow test window");
+    cx.run_until_parked();
+    let root = window.root(&mut cx).expect("mention arrow test root");
+    let surface = root.update(&mut cx, |app, cx| app.root.ensure_surface(cx));
+    let input = surface.update(&mut cx, |surface, _| surface.slack_composer_input.clone());
+    surface.update(&mut cx, |surface, cx| {
+        surface.slack_composer_focused = true;
+        cx.notify();
+    });
+    cx.run_until_parked();
+    for character in ["@", "e"] {
+        cx.update_window(window.into(), |_, window, cx| {
+            input.update(cx, |input, cx| {
+                input.replace_text_in_range(None, character, window, cx);
+            });
+        })
+        .unwrap();
+        cx.run_until_parked();
+    }
+    let rows = surface.update(&mut cx, |surface, _| {
+        let panel = surface.slack_aux_panel.clone().expect("mention list open");
+        surface
+            .slack_visible_mention_picker_rows(&panel)
+            .filter(|row| row.action.is_some())
+            .map(|row| row.label.clone())
+            .collect::<Vec<_>>()
+    });
+    assert!(rows.len() >= 2, "need two suggestions, got {rows:?}");
+    let main = crate::ui::surface::SlackComposerTarget::Main;
+    let moved = surface.update(&mut cx, |surface, cx| {
+        surface.move_slack_composer_aux_selection(&main, 1, cx)
+    });
+    assert!(moved, "Down should move through the open suggestions");
+    surface.update(&mut cx, |surface, cx| {
+        surface.activate_first_slack_composer_aux_action_if_open(&main, cx)
+    });
+    cx.run_until_parked();
+    let text = surface.update(&mut cx, |surface, _| surface.slack_composer_text.clone());
+    let expected = if rows[1].starts_with('@') {
+        rows[1].clone()
+    } else {
+        format!("@{}", rows[1])
+    };
+    assert!(
+        text.contains(&expected)
+            && !text.contains(&format!("@{}", rows[0].trim_start_matches('@'))),
+        "Enter after Down should insert {:?}; text is {text:?}",
+        rows[1]
+    );
+}

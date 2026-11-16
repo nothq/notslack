@@ -336,6 +336,12 @@ impl SurfaceState {
         if panel.query_behavior != Some(super::SlackAuxPanelQueryBehavior::Mention) {
             self.slack_mention_picker_state = None;
         }
+        // A new query starts from the top; the same suggestions rebuilt (as
+        // when the workspace's people finish loading) keep the selection.
+        if self.slack_aux_panel_selected_query != panel.query {
+            self.slack_aux_panel_selected = 0;
+            self.slack_aux_panel_selected_query = panel.query.clone();
+        }
         if !matches!(
             panel.query_behavior,
             Some(

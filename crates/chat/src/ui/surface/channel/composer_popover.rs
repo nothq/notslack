@@ -49,7 +49,11 @@ impl SurfaceState {
                 SLACK_COMPOSER_PICKER_POPOVER_WIDTH,
                 SLACK_EMOJI_PICKER_POPOVER_HEIGHT,
             ),
-            SlackAuxPanelQueryBehavior::Mention | SlackAuxPanelQueryBehavior::SearchWorkspace => (
+            SlackAuxPanelQueryBehavior::Mention => (
+                SLACK_COMPOSER_PICKER_POPOVER_WIDTH,
+                self.slack_mention_picker_height(panel),
+            ),
+            SlackAuxPanelQueryBehavior::SearchWorkspace => (
                 SLACK_COMPOSER_PICKER_POPOVER_WIDTH,
                 SLACK_MENTION_PICKER_POPOVER_HEIGHT,
             ),

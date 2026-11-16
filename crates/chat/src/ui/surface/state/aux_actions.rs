@@ -79,8 +79,11 @@ impl SurfaceState {
     fn take_slack_aux_mention_target(
         &mut self,
     ) -> Option<(SlackComposerTarget, SlackMentionInsertionMode)> {
-        let target = self.slack_composer_aux_target.take()?;
+        // The insertion check needs the panel still aimed at the composer,
+        // so the target is cleared only afterwards.
+        let target = self.slack_composer_aux_target.clone()?;
         let insertion = self.take_slack_mention_insertion_mode(&target);
+        self.slack_composer_aux_target = None;
         self.slack_aux_panel = None;
         Some((target, insertion))
     }

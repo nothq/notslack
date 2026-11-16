@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use gpui::SharedString;
 use gpui_components::text_input::{
-    TextInputAction, TextInputChange, TextInputEnterBehavior, TextInputMode, TextInputProps,
-    TextInputStyle,
+    TextInputAction, TextInputChange, TextInputEnterBehavior, TextInputKeyDownPreAction,
+    TextInputMode, TextInputProps, TextInputStyle,
 };
 
 use super::{
@@ -65,6 +65,35 @@ impl SurfaceState {
             .on_escape(callbacks.on_escape)
             .on_focus(callbacks.on_focus)
             .on_layout_change(callbacks.on_layout_change)
+            .on_key_down_before_default(Self::slack_composer_suggestion_keys(cx, |_| {
+                Some(super::super::SlackComposerTarget::Main)
+            }))
+    }
+
+    /// Up and Down move through the mention suggestions while they are open
+    /// for the composer `target` names; otherwise they move the caret.
+    pub(in crate::ui::surface) fn slack_composer_suggestion_keys(
+        cx: &mut Context<Self>,
+        target: fn(&SurfaceState) -> Option<super::super::SlackComposerTarget>,
+    ) -> TextInputKeyDownPreAction {
+        let surface = cx.entity().downgrade();
+        Rc::new(move |_snapshot, event, _window, cx| {
+            let step = match event.keystroke.key.as_str() {
+                "up" => -1,
+                "down" => 1,
+                _ => return false,
+            };
+            if event.keystroke.modifiers.modified() {
+                return false;
+            }
+            surface
+                .update(cx, |surface, cx| {
+                    target(surface).is_some_and(|target| {
+                        surface.move_slack_composer_aux_selection(&target, step, cx)
+                    })
+                })
+                .unwrap_or(false)
+        })
     }
 
     fn slack_composer_input_callbacks(
