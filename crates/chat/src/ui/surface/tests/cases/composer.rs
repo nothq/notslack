@@ -129,10 +129,7 @@ fn exercise_slack_composer_mention_insertion(
     assert!(app
         .root
         .handle_slack_key_down(&named_key_down_event("enter"), cx));
-    assert!(app
-        .root
-        .slack_composer_text(cx)
-        .contains("@Ada Lovelace"));
+    assert!(app.root.slack_composer_text(cx).contains("@Ada Lovelace"));
 }
 
 fn exercise_slack_composer_media_attachments(
@@ -249,4 +246,44 @@ fn queue_slack_upload_message(app: &mut SlackTestApp, cx: &mut Context<SlackTest
         cx,
     );
     app.root.send_slack_message(cx);
+}
+
+#[gpui::test]
+fn slack_message_edit_cancel_closes_the_editor_without_crashing() {
+    use gpui::AppContext as _;
+    let _guard = acquire_headless_test_lock();
+    let mut cx = headless_test_context();
+    let (api, _) = slack_test_api();
+    let window = cx
+        .open_window(app_size(), |_, cx| {
+            let workspace = slack_test_board();
+            let api = api.clone();
+            cx.new(move |_| SlackTestApp::from_slack_workspace(workspace, api))
+        })
+        .expect("failed to open slack message edit test window");
+    cx.run_until_parked();
+    let root = window.root(&mut cx).expect("message edit test root");
+    let surface = root.update(&mut cx, |app, cx| app.root.ensure_surface(cx));
+    let editor = surface.update(&mut cx, |surface, cx| {
+        let workspace = surface.slack_workspace().unwrap();
+        let target = crate::ui::surface::SlackMessageEditTarget {
+            team_id: workspace.team_id.clone(),
+            conversation_id: workspace.conversation_id.clone(),
+            message_timestamp: crate::ui::SlackMessageTimestamp::parse("1700000000.000100")
+                .unwrap(),
+        };
+        let document = crate::ui::surface::SlackComposerDocument::plain_text(
+            "GE-9776 - merged\nGE-9292 - on PR\nGE-9166 - follow up".to_string(),
+        );
+        let weak = cx.entity().downgrade();
+        let editor =
+            cx.new(|cx| crate::ui::surface::SlackMessageEditView::new(weak, target, document, cx));
+        surface.slack_message_edit = Some(editor.clone());
+        editor
+    });
+    cx.run_until_parked();
+    // The Cancel button runs inside the editor's own update.
+    editor.update(&mut cx, |editor, cx| editor.cancel(cx));
+    cx.run_until_parked();
+    assert!(surface.update(&mut cx, |surface, _| surface.slack_message_edit.is_none()));
 }

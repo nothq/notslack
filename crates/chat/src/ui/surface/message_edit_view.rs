@@ -17,9 +17,13 @@ use super::{
     SurfaceState,
 };
 
-const SLACK_MESSAGE_EDIT_HEIGHT: f32 = 80.0;
+/// The editor's border and its one-line input.
+const SLACK_MESSAGE_EDIT_FRAME_HEIGHT: f32 = 2.0;
 const SLACK_MESSAGE_EDIT_INPUT_HEIGHT: f32 = 38.0;
+const SLACK_MESSAGE_EDIT_LINE_HEIGHT: f32 = 22.0;
 const SLACK_MESSAGE_EDIT_ACTIONS_HEIGHT: f32 = 40.0;
+/// The editor grows with the message up to this many lines, then scrolls.
+const SLACK_MESSAGE_EDIT_MAX_VISIBLE_LINES: usize = 10;
 
 pub(crate) struct SlackMessageEditView {
     surface: WeakEntity<SurfaceState>,
@@ -31,6 +35,11 @@ pub(crate) struct SlackMessageEditView {
     focus_pending: bool,
     pending: bool,
     error: Option<String>,
+    /// How many lines the input showed last render; the message list is
+    /// remeasured when it changes.
+    visible_lines: usize,
+    /// Whether the message list has scrolled the editor into view yet.
+    revealed: bool,
 }
 
 impl SlackMessageEditView {
@@ -51,6 +60,9 @@ impl SlackMessageEditView {
                 cx,
             )
         });
+        // The input measures its lines while laying out; render again then
+        // so the editor's height follows.
+        cx.observe(&input, |_, _, cx| cx.notify()).detach();
         Self {
             surface,
             target,
@@ -61,6 +73,8 @@ impl SlackMessageEditView {
             focus_pending: true,
             pending: false,
             error: None,
+            visible_lines: 1,
+            revealed: false,
         }
     }
 
@@ -112,9 +126,12 @@ impl SlackMessageEditView {
         let request_focus = std::mem::take(&mut self.focus_pending);
         TextInputProps::multiline(self.document.text().to_string())
             .mode(TextInputMode::Multiline {
-                max_visible_lines: Some(1),
+                max_visible_lines: Some(SLACK_MESSAGE_EDIT_MAX_VISIBLE_LINES),
             })
-            .style(slack_message_edit_input_style(AppearanceMode::current(cx)))
+            .style(slack_message_edit_input_style(
+                AppearanceMode::current(cx),
+                slack_message_edit_input_height(self.visible_lines),
+            ))
             .bordered(false)
             .disabled(self.pending)
             .request_focus(request_focus)
@@ -140,30 +157,43 @@ impl SlackMessageEditView {
         };
         self.pending = true;
         self.error = None;
+        cx.notify();
         let target = self.target.clone();
-        let result = self.surface.update(cx, move |surface, cx| {
-            surface.start_slack_message_edit(target, draft, cx)
+        let surface = self.surface.clone();
+        let edit = cx.entity().downgrade();
+        // The surface reads this editor, so it runs once this update ends;
+        // reading an entity mid-update panics.
+        cx.defer(move |cx| {
+            let result = surface.update(cx, move |surface, cx| {
+                surface.start_slack_message_edit(target, draft, cx)
+            });
+            edit.update(cx, |edit, cx| match result {
+                Ok(Ok(())) => cx.notify(),
+                Ok(Err(error)) => edit.finish_pending(Some(error), cx),
+                Err(_) => edit.finish_pending(
+                    Some("The Slack conversation closed while editing.".to_string()),
+                    cx,
+                ),
+            })
+            .ok();
         });
-        match result {
-            Ok(Ok(())) => cx.notify(),
-            Ok(Err(error)) => self.finish_pending(Some(error), cx),
-            Err(_) => self.finish_pending(
-                Some("The Slack conversation closed while editing.".to_string()),
-                cx,
-            ),
-        }
     }
 
-    fn cancel(&mut self, cx: &mut Context<Self>) {
+    pub(crate) fn cancel(&mut self, cx: &mut Context<Self>) {
         if self.pending {
             return;
         }
         let target = self.target.clone();
-        self.surface
-            .update(cx, move |surface, cx| {
-                surface.cancel_slack_message_edit(&target, cx);
-            })
-            .ok();
+        let surface = self.surface.clone();
+        // Deferred like submit: the surface reads this editor to check it is
+        // the one being cancelled.
+        cx.defer(move |cx| {
+            surface
+                .update(cx, move |surface, cx| {
+                    surface.cancel_slack_message_edit(&target, cx);
+                })
+                .ok();
+        });
     }
 
     fn render_toolbar_icon(
@@ -295,7 +325,52 @@ impl SlackMessageEditView {
 }
 
 impl Render for SlackMessageEditView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let visible_lines = self
+            .input
+            .read(cx)
+            .measured_line_count()
+            .clamp(1, SLACK_MESSAGE_EDIT_MAX_VISIBLE_LINES);
+        if visible_lines != self.visible_lines || !self.revealed {
+            self.visible_lines = visible_lines;
+            self.revealed = true;
+            let surface = self.surface.clone();
+            cx.defer({
+                let surface = surface.clone();
+                move |cx| {
+                    surface
+                        .update(cx, |surface, cx| {
+                            surface.slack_message_list_state.remeasure();
+                            cx.notify();
+                        })
+                        .ok();
+                }
+            });
+            // Keep the whole editor in view as it opens and grows, even on
+            // the last message. The list only knows the new height once it
+            // has laid the row out again, so reveal it the frame after.
+            let message_id = self.target.message_timestamp.as_str().to_string();
+            window.on_next_frame(move |window, _| {
+                window.on_next_frame(move |_, cx| {
+                    surface
+                        .update(cx, |surface, cx| {
+                            if let Some(index) = surface
+                                .slack_message_rows
+                                .iter()
+                                .position(|row| row.id == message_id)
+                            {
+                                surface
+                                    .slack_message_list_state
+                                    .scroll_to_reveal_item(index);
+                                cx.notify();
+                            }
+                        })
+                        .ok();
+                });
+                window.refresh();
+            });
+        }
+        let input_height = slack_message_edit_input_height(self.visible_lines);
         let props = self.input_props(cx);
         self.input
             .update(cx, |input, cx| input.apply_props(props, cx));
@@ -303,7 +378,9 @@ impl Render for SlackMessageEditView {
         div()
             .id("slack-message-inline-editor")
             .w_full()
-            .h(px(SLACK_MESSAGE_EDIT_HEIGHT))
+            .h(px(input_height
+                + SLACK_MESSAGE_EDIT_ACTIONS_HEIGHT
+                + SLACK_MESSAGE_EDIT_FRAME_HEIGHT))
             .rounded(px(8.0))
             .border_1()
             .border_color(rgb(palette.composer_focused_border))
@@ -313,7 +390,7 @@ impl Render for SlackMessageEditView {
             .child(
                 div()
                     .w_full()
-                    .h(px(SLACK_MESSAGE_EDIT_INPUT_HEIGHT))
+                    .h(px(input_height))
                     .flex_none()
                     .child(self.input.clone()),
             )
@@ -321,11 +398,16 @@ impl Render for SlackMessageEditView {
     }
 }
 
-fn slack_message_edit_input_style(appearance_mode: AppearanceMode) -> TextInputStyle {
+fn slack_message_edit_input_height(visible_lines: usize) -> f32 {
+    SLACK_MESSAGE_EDIT_INPUT_HEIGHT
+        + visible_lines.saturating_sub(1) as f32 * SLACK_MESSAGE_EDIT_LINE_HEIGHT
+}
+
+fn slack_message_edit_input_style(appearance_mode: AppearanceMode, height: f32) -> TextInputStyle {
     let palette = slack_palette(appearance_mode);
     TextInputStyle {
-        height: px(SLACK_MESSAGE_EDIT_INPUT_HEIGHT),
-        min_height: px(SLACK_MESSAGE_EDIT_INPUT_HEIGHT),
+        height: px(height),
+        min_height: px(height),
         padding_x: px(12.0),
         padding_y: px(8.0),
         radius: px(7.0),
@@ -337,7 +419,7 @@ fn slack_message_edit_input_style(appearance_mode: AppearanceMode) -> TextInputS
         selection: alpha(0x1264a3, 0.28),
         caret: rgb(palette.main_text).into(),
         font_size: px(15.0),
-        line_height: px(22.0),
+        line_height: px(SLACK_MESSAGE_EDIT_LINE_HEIGHT),
         font_family: Some("Lato".into()),
     }
 }

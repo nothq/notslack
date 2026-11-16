@@ -150,7 +150,7 @@ impl SurfaceState {
             .flex()
             .items_start()
             .gap(px(8.0))
-            .when(editing, |this| this.h(px(96.0)).bg(alpha(0xf2c744, 0.20)))
+            .when(editing, |this| this.pb(px(8.0)).bg(alpha(0xf2c744, 0.20)))
             .when(!editing, |this| {
                 this.hover(|style| style.bg(alpha(0x000000, 0.08)))
             })
@@ -236,7 +236,6 @@ impl SurfaceState {
 fn slack_message_editor_container(editor: Entity<SlackMessageEditView>) -> Div {
     div()
         .mt(px(8.0))
-        .h(px(80.0))
         .min_w(px(0.0))
         .flex_grow(1.0)
         .child(editor)
