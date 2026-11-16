@@ -3913,6 +3913,7 @@ dependencies = [
  "notslack-app-model",
  "notslack-chat",
  "notslack-media-capture",
+ "serde_json",
  "theme",
 ]
 

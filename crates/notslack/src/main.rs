@@ -11,6 +11,8 @@ use gpui::{
     WindowBounds, WindowOptions,
 };
 
+mod ui_preferences;
+
 actions!(notslack, [Quit]);
 
 fn main() {
@@ -57,6 +59,8 @@ enum Content {
 struct Notslack {
     content: Content,
     focus: FocusHandle,
+    /// Saves the sidebar width when the person finishes dragging it.
+    _layout_subscription: Option<gpui::Subscription>,
 }
 
 impl Notslack {
@@ -68,10 +72,37 @@ impl Notslack {
             .detach();
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
-        Self {
+        let mut notslack = Self {
             content: connect(),
             focus,
+            _layout_subscription: None,
+        };
+        notslack.adopt_chat(cx);
+        notslack
+    }
+
+    /// Restores the remembered sidebar width on a new chat surface and keeps
+    /// it remembered.
+    fn adopt_chat(&mut self, cx: &mut Context<Self>) {
+        let Content::Chat(root) = &mut self.content else {
+            self._layout_subscription = None;
+            return;
+        };
+        if let Some(ratio) = ui_preferences::sidebar_ratio_basis_points() {
+            root.set_slack_sidebar_ratio_basis_points(ratio, cx);
         }
+        let events = root.event_source(cx);
+        self._layout_subscription = Some(cx.subscribe(
+            &events,
+            |_, _, event: &chat::model::ChatSurfaceEvent, _| {
+                if let chat::model::ChatSurfaceEvent::SlackSidebarRatioCommitted {
+                    ratio_basis_points,
+                } = event
+                {
+                    ui_preferences::save_sidebar_ratio_basis_points(*ratio_basis_points);
+                }
+            },
+        ));
     }
 
     fn reconnect(&mut self, cx: &mut Context<Self>) {
@@ -86,6 +117,7 @@ impl Notslack {
                     Ok(()) => connect(),
                     Err(error) => Content::Disconnected(error.into()),
                 };
+                this.adopt_chat(cx);
                 cx.notify();
             })
         })
@@ -170,8 +202,17 @@ impl Render for Notslack {
                 .justify_center()
                 .gap_4()
                 .text_color(rgb(theme.text_primary))
-                .child(div().text_xl().font_weight(gpui::FontWeight::BOLD).child("notslack"))
-                .child(div().text_color(rgb(theme.text_secondary)).child(reason.clone()))
+                .child(
+                    div()
+                        .text_xl()
+                        .font_weight(gpui::FontWeight::BOLD)
+                        .child("notslack"),
+                )
+                .child(
+                    div()
+                        .text_color(rgb(theme.text_secondary))
+                        .child(reason.clone()),
+                )
                 .child(
                     div()
                         .text_color(rgb(theme.text_muted))
