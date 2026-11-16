@@ -45,9 +45,54 @@ impl SlackTimezone {
 
 pub(super) fn channel_topic(channel: &Value, channel_kind: SlackConversationKind) -> String {
     if channel_kind.is_channel() {
-        string_at(channel, &["topic", "value"]).unwrap_or_default()
+        string_at(channel, &["topic", "value"])
+            .map(|topic| slack_mrkdwn_plain_text(&topic))
+            .unwrap_or_default()
     } else {
         String::new()
+    }
+}
+
+/// A line of Slack's markup as it reads: `<https://zoom.us/j/1>` becomes
+/// the URL, `<url|label>` its label, `<#C1|general>` `#general`, `<!here>`
+/// `@here`, and `&amp;`, `&lt;`, `&gt;` their characters.
+pub(super) fn slack_mrkdwn_plain_text(text: &str) -> String {
+    let mut plain = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find('<') {
+        plain.push_str(&rest[..start]);
+        let Some(length) = rest[start..].find('>') else {
+            plain.push_str(&rest[start..]);
+            rest = "";
+            break;
+        };
+        plain.push_str(&slack_mrkdwn_entity_text(&rest[start + 1..start + length]));
+        rest = &rest[start + length + 1..];
+    }
+    plain.push_str(rest);
+    plain
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&amp;", "&")
+}
+
+fn slack_mrkdwn_entity_text(entity: &str) -> String {
+    let (target, label) = entity
+        .split_once('|')
+        .map_or((entity, None), |(target, label)| (target, Some(label)));
+    if let Some(channel) = target.strip_prefix('#') {
+        return format!("#{}", label.unwrap_or(channel));
+    }
+    if let Some(user) = target.strip_prefix('@') {
+        return format!("@{}", label.unwrap_or(user));
+    }
+    if let Some(special) = target.strip_prefix('!') {
+        let special = special.split('^').next().unwrap_or(special);
+        return label.map_or_else(|| format!("@{special}"), str::to_string);
+    }
+    match label {
+        Some(label) if !label.is_empty() => label.to_string(),
+        _ => target.strip_prefix("mailto:").unwrap_or(target).to_string(),
     }
 }
 
@@ -312,6 +357,30 @@ mod tests {
         assert_eq!(
             slack_conversation_kind(&channel),
             SlackConversationKind::PrivateChannel
+        );
+    }
+}
+
+#[cfg(test)]
+mod mrkdwn_plain_text_tests {
+    use super::slack_mrkdwn_plain_text;
+
+    #[test]
+    fn topics_read_as_text() {
+        assert_eq!(
+            slack_mrkdwn_plain_text("<https://zoom.us/j/4539295436>"),
+            "https://zoom.us/j/4539295436"
+        );
+        assert_eq!(
+            slack_mrkdwn_plain_text(
+                "Standup <https://zoom.us/j/1|Zoom> in <#C1|general> &amp; <!here>"
+            ),
+            "Standup Zoom in #general & @here"
+        );
+        assert_eq!(slack_mrkdwn_plain_text("<mailto:a@b.com>"), "a@b.com");
+        assert_eq!(
+            slack_mrkdwn_plain_text("1 &lt; 2 and a lone <"),
+            "1 < 2 and a lone <"
         );
     }
 }
