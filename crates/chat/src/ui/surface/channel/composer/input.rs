@@ -2,9 +2,13 @@ use std::rc::Rc;
 
 use gpui::SharedString;
 use gpui_components::text_input::{
-    TextInputAction, TextInputChange, TextInputEnterBehavior, TextInputMode, TextInputProps,
-    TextInputStyle,
+    TextInputAction, TextInputChange, TextInputEnterBehavior, TextInputMode,
+    TextInputPreMutationAction, TextInputPreMutationActionHandler, TextInputPreMutationDecision,
+    TextInputProps, TextInputRightClick, TextInputStyle,
 };
+
+use crate::ui::surface::state::slack_pasted_link;
+use crate::ui::surface::SlackPastedAttachment;
 
 use super::{
     alpha, px, rgb, slack_palette, Context, SurfaceState, SLACK_COMPOSER_INPUT_HEIGHT,
@@ -65,6 +69,67 @@ impl SurfaceState {
             .on_escape(callbacks.on_escape)
             .on_focus(callbacks.on_focus)
             .on_layout_change(callbacks.on_layout_change)
+            .on_pre_mutation_action(Self::slack_composer_on_pre_mutation(cx))
+            .on_right_click(Self::slack_composer_on_right_click(cx))
+    }
+
+    /// A right click on a link opens its menu, as in Slack.
+    fn slack_composer_on_right_click(cx: &mut Context<Self>) -> TextInputRightClick {
+        let surface = cx.entity().downgrade();
+        Rc::new(move |offset, position, _window, cx| {
+            surface
+                .update(cx, |surface, cx| {
+                    surface.right_click_slack_composer(offset, position, cx);
+                })
+                .ok();
+        })
+    }
+
+    /// A paste holding an image or copied files attaches them instead of
+    /// pasting text, as Slack's composer does.
+    fn slack_composer_on_pre_mutation(cx: &mut Context<Self>) -> TextInputPreMutationActionHandler {
+        let surface = cx.entity().downgrade();
+        Rc::new(move |action, _window, cx| {
+            let TextInputPreMutationAction::Paste {
+                item, range, text, ..
+            } = action
+            else {
+                return TextInputPreMutationDecision::Continue;
+            };
+            let Some(pasted) = SlackPastedAttachment::from_clipboard(&item) else {
+                // A pasted web address becomes a link, shown without https://
+                // as in Slack. It runs after this update, since it also sets
+                // the input's text.
+                let Some((display, url)) = slack_pasted_link(&text) else {
+                    return TextInputPreMutationDecision::Continue;
+                };
+                let input = cx.entity();
+                let surface = surface.clone();
+                cx.defer(move |cx| {
+                    let pasted = surface
+                        .update(cx, |surface, cx| {
+                            surface.paste_slack_composer_link(range, &display, url, cx)
+                        })
+                        .ok()
+                        .flatten();
+                    if let Some((text, caret)) = pasted {
+                        input.update(cx, |input, cx| {
+                            input.set_text_and_move_cursor(text, caret, cx);
+                        });
+                    }
+                });
+                return TextInputPreMutationDecision::Handled;
+            };
+            surface
+                .update(cx, |surface, cx| {
+                    if let Err(error) = surface.attach_slack_pasted_files(pasted, cx) {
+                        surface.slack_error = Some(error);
+                        cx.notify();
+                    }
+                })
+                .ok();
+            TextInputPreMutationDecision::Handled
+        })
     }
 
     fn slack_composer_input_callbacks(

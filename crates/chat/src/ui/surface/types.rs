@@ -50,6 +50,7 @@ mod attachments;
 mod audio_clip;
 mod composer;
 mod composer_capture;
+mod composer_link_menu;
 mod conversation;
 mod draft_sync;
 mod file_staging;
@@ -73,6 +74,7 @@ pub use composer::{
     SlackPreparedUploadFile, SlackThreadDraftHandle,
 };
 pub(crate) use composer_capture::*;
+pub(crate) use composer_link_menu::*;
 pub(crate) use conversation::*;
 pub(crate) use draft_sync::*;
 pub use file_staging::*;

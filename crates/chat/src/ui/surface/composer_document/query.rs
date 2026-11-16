@@ -4,7 +4,7 @@ use super::lines::{affected_line_indices, line_index_at_cursor};
 use super::{
     ContiguousTextEdit, SlackComposerDocument, SlackComposerEntityRun, SlackComposerFormatAction,
     SlackComposerInlineFormat, SlackComposerInlineStyle, SlackComposerLineBlock,
-    SlackComposerLinkRun,
+    SlackComposerLinkRun, SlackComposerLinkUrl,
 };
 
 impl SlackComposerDocument {
@@ -109,6 +109,15 @@ impl SlackComposerDocument {
         self.links
             .iter()
             .find(|link| link.range.start <= offset && offset < link.range.end)
+    }
+
+    /// The link under `offset`: its range and address.
+    pub(crate) fn link_range_at(
+        &self,
+        offset: usize,
+    ) -> Option<(std::ops::Range<usize>, SlackComposerLinkUrl)> {
+        self.link_at(offset)
+            .map(|link| (link.range.clone(), link.url.clone()))
     }
 
     pub(super) fn entity_at(&self, offset: usize) -> Option<&SlackComposerEntityRun> {

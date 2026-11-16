@@ -116,21 +116,25 @@ impl SlackComposerDocument {
         } else {
             palette.text
         };
+        // Links and mentions sit on a soft chip of their color, as in Slack.
+        let chip = uses_link_color && !code_block && !style.code;
         Some(TextInputHighlight {
             range,
             color,
             background: if code_block {
                 Some(palette.code_block)
+            } else if chip {
+                Some(color.opacity(0.14))
             } else {
                 style.code.then_some(palette.code)
             },
             font_family: None,
-            background_corner_radius: px(0.0),
-            background_padding_x: px(0.0),
+            background_corner_radius: px(if chip { 4.0 } else { 0.0 }),
+            background_padding_x: px(if chip { 2.0 } else { 0.0 }),
             background_inset_y: px(0.0),
             font_weight: style.bold.then_some(FontWeight::BOLD),
             font_style: style.italic.then_some(FontStyle::Italic),
-            underline: (style.underline || linked).then_some(UnderlineStyle {
+            underline: style.underline.then_some(UnderlineStyle {
                 color: Some(color),
                 thickness: px(1.0),
                 wavy: false,

@@ -159,10 +159,8 @@ impl SlackComposerDocument {
         url: SlackComposerLinkUrl,
     ) {
         self.assert_valid_range(&range);
-        assert!(
-            !range.is_empty() && !text.is_empty(),
-            "Slack composer links require selected text"
-        );
+        // An empty range inserts the link, as when pasting it at the caret.
+        assert!(!text.is_empty(), "Slack composer links require text");
         let mut updated_text = String::with_capacity(
             self.text
                 .len()
@@ -282,5 +280,23 @@ impl SlackComposerDocument {
         self.highlights_dirty = true;
         self.advance_revision();
         true
+    }
+}
+
+#[cfg(test)]
+mod link_insert_tests {
+    use crate::ui::surface::{SlackComposerDocument, SlackComposerLinkUrl};
+
+    #[test]
+    fn a_link_pasted_at_the_caret_is_inserted_as_a_link() {
+        let mut document = SlackComposerDocument::plain_text("for ");
+        let url = SlackComposerLinkUrl::parse("https://example.com/pull/1").unwrap();
+        document.replace_range_with_link(4..4, "example.com/pull/1", url);
+        assert_eq!(document.text(), "for example.com/pull/1");
+        let (range, url) = document
+            .link_range_at(6)
+            .expect("the pasted text is a link");
+        assert_eq!(range, 4..22);
+        assert_eq!(url.as_str(), "https://example.com/pull/1");
     }
 }

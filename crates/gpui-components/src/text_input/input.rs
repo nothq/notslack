@@ -76,6 +76,12 @@ impl TextInput {
             }
             _ => {}
         }
+        if let Some((key_kind, modifiers)) = linux_control_shortcut(key, modifiers) {
+            return match key_kind {
+                ControlShortcut::Word => self.handle_alt_key(key, modifiers, window, cx),
+                ControlShortcut::Platform => self.handle_platform_key(key, modifiers, window, cx),
+            };
+        }
         if modifiers.platform {
             return self.handle_platform_key(key, modifiers, window, cx);
         }
@@ -378,5 +384,72 @@ impl TextInput {
             ));
             self.apply_utf8_replacement(self.selected_range.clone(), String::new(), window, cx);
         }
+    }
+}
+
+/// Which macOS shortcut a Ctrl shortcut stands for elsewhere.
+#[derive(Debug, PartialEq, Eq)]
+enum ControlShortcut {
+    /// Word movement and deletion, Alt on macOS.
+    Word,
+    /// Clipboard, undo, select all and the rest, Cmd on macOS.
+    Platform,
+}
+
+/// On Linux and Windows, Ctrl does what Cmd does on macOS (Ctrl+V pastes)
+/// and what Alt does for words (Ctrl+Left moves a word). Returns the
+/// shortcut with its modifiers as the macOS handlers expect them; `None` on
+/// macOS or without a bare Ctrl.
+fn linux_control_shortcut(key: &str, modifiers: Modifiers) -> Option<(ControlShortcut, Modifiers)> {
+    if cfg!(target_os = "macos")
+        || !modifiers.control
+        || modifiers.alt
+        || modifiers.platform
+        || modifiers.function
+    {
+        return None;
+    }
+    let mut translated = modifiers;
+    translated.control = false;
+    if matches!(key, "left" | "right" | "backspace" | "delete") {
+        translated.alt = true;
+        Some((ControlShortcut::Word, translated))
+    } else {
+        translated.platform = true;
+        Some((ControlShortcut::Platform, translated))
+    }
+}
+
+#[cfg(all(test, not(target_os = "macos")))]
+mod control_shortcut_tests {
+    use super::*;
+
+    fn control(shift: bool) -> Modifiers {
+        Modifiers {
+            control: true,
+            shift,
+            ..Modifiers::default()
+        }
+    }
+
+    #[test]
+    fn ctrl_v_is_paste_and_ctrl_left_moves_a_word() {
+        let (kind, modifiers) = linux_control_shortcut("v", control(false)).unwrap();
+        assert_eq!(kind, ControlShortcut::Platform);
+        assert!(modifiers.platform && !modifiers.control);
+        let (kind, modifiers) = linux_control_shortcut("left", control(true)).unwrap();
+        assert_eq!(kind, ControlShortcut::Word);
+        assert!(modifiers.alt && modifiers.shift && !modifiers.control);
+    }
+
+    #[test]
+    fn other_combinations_are_left_alone() {
+        let ctrl_alt = Modifiers {
+            control: true,
+            alt: true,
+            ..Modifiers::default()
+        };
+        assert!(linux_control_shortcut("v", ctrl_alt).is_none());
+        assert!(linux_control_shortcut("v", Modifiers::default()).is_none());
     }
 }

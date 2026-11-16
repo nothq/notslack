@@ -261,6 +261,8 @@ pub struct SurfaceStateData {
     pub(crate) slack_message_edit_generation: u64,
     pub(crate) slack_pending_message_edit: Option<SlackMessageEditRequest>,
     pub(crate) slack_message_delete_modal: Option<SlackMessageDeleteModal>,
+    /// The menu opened by right-clicking a link in the main composer.
+    pub(crate) slack_composer_link_menu: Option<super::super::SlackComposerLinkMenu>,
     pub(crate) slack_message_delete_generation: u64,
     pub(crate) slack_pending_message_delete: Option<SlackMessageDeleteRequest>,
     pub(crate) slack_message_mark_unread_generation: u64,

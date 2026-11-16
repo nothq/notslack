@@ -3,7 +3,7 @@ use gpui::{AppContext, TaskExt};
 use super::super::{load_slack_prepared_upload_files_from_paths, Context, SurfaceState, Window};
 use crate::ui::surface::{
     SlackAttachmentPathSelection, SlackComposerCaptureGeneration, SlackMainComposerDraftHandle,
-    SlackPreparedUploadFile, SlackVideoClipCaptureState,
+    SlackPastedAttachment, SlackPreparedUploadFile, SlackVideoClipCaptureState,
 };
 
 #[derive(Clone, Copy)]
@@ -271,5 +271,96 @@ impl SlackAttachmentSelectionPolicy {
             surface.slack_composer_focused = true;
             cx.notify();
         }
+    }
+}
+
+impl SurfaceState {
+    /// Attaches a pasted image or files to the main composer, through the
+    /// same steps as choosing files with the + button.
+    pub(crate) fn attach_slack_pasted_files(
+        &mut self,
+        pasted: SlackPastedAttachment,
+        cx: &mut Context<Self>,
+    ) -> Result<(), String> {
+        let handle = self.prepare_slack_attachment_picker()?;
+        let local_file_api = self.local_file_api.clone().ok_or_else(|| {
+            "Slack local file access is unavailable for this surface.".to_string()
+        })?;
+        let paths = match pasted {
+            SlackPastedAttachment::Image(image) => vec![write_slack_pasted_image(&image)?],
+            SlackPastedAttachment::Files(paths) => paths,
+        };
+        let policy = SlackAttachmentSelectionPolicy::General;
+        let Some(selection) = select_slack_attachment_paths(self, policy, &handle, paths, cx)
+        else {
+            return Ok(());
+        };
+        let (paths, selection_truncated) = selection.into_parts();
+        cx.spawn(async move |this, cx| {
+            let loaded = cx
+                .background_spawn(async move {
+                    load_slack_prepared_upload_files_from_paths(local_file_api.as_ref(), paths)
+                })
+                .await;
+            this.update(cx, |this, cx| {
+                finish_slack_attachment_picker_load(
+                    this,
+                    SlackAttachmentPickerLoad {
+                        policy,
+                        handle,
+                        selection_truncated,
+                        loaded,
+                    },
+                    cx,
+                );
+            })
+            .ok();
+        })
+        .detach();
+        Ok(())
+    }
+}
+
+/// Saves a pasted image as `image.<ext>`, the name Slack gives pasted
+/// images, in a folder of its own so pastes never overwrite each other.
+fn write_slack_pasted_image(image: &gpui::Image) -> Result<std::path::PathBuf, String> {
+    let extension = match image.format {
+        gpui::ImageFormat::Png => "png",
+        gpui::ImageFormat::Jpeg => "jpg",
+        gpui::ImageFormat::Gif => "gif",
+        gpui::ImageFormat::Webp => "webp",
+        gpui::ImageFormat::Bmp => "bmp",
+        gpui::ImageFormat::Tiff => "tiff",
+        gpui::ImageFormat::Svg => "svg",
+        _ => "png",
+    };
+    let folder = std::env::temp_dir()
+        .join("notslack-pasted-images")
+        .join(uuid::Uuid::new_v4().to_string());
+    std::fs::create_dir_all(&folder)
+        .map_err(|error| format!("Couldn’t save the pasted image: {error}"))?;
+    let path = folder.join(format!("image.{extension}"));
+    std::fs::write(&path, &image.bytes)
+        .map_err(|error| format!("Couldn’t save the pasted image: {error}"))?;
+    Ok(path)
+}
+
+#[cfg(test)]
+mod paste_tests {
+    use super::{write_slack_pasted_image, SlackPastedAttachment};
+
+    #[test]
+    fn a_pasted_image_is_saved_as_image_png() {
+        let image = gpui::Image::from_bytes(gpui::ImageFormat::Png, vec![1, 2, 3]);
+        let path = write_slack_pasted_image(&image).unwrap();
+        assert_eq!(path.file_name().unwrap(), "image.png");
+        assert_eq!(std::fs::read(&path).unwrap(), [1, 2, 3]);
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
+    fn text_on_the_clipboard_is_not_an_attachment() {
+        let item = gpui::ClipboardItem::new_string("hello".into());
+        assert!(SlackPastedAttachment::from_clipboard(&item).is_none());
     }
 }

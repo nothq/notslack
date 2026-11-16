@@ -114,3 +114,24 @@ impl SlackFileStagingLocator {
         }
     }
 }
+
+/// What a paste into the composer holds besides text.
+pub(crate) enum SlackPastedAttachment {
+    /// An image copied from a screenshot tool or a browser.
+    Image(gpui::Image),
+    /// Files copied in a file manager.
+    Files(Vec<std::path::PathBuf>),
+}
+
+impl SlackPastedAttachment {
+    /// The image or files in a clipboard item, if it holds any.
+    pub(crate) fn from_clipboard(item: &gpui::ClipboardItem) -> Option<Self> {
+        item.entries().iter().find_map(|entry| match entry {
+            gpui::ClipboardEntry::Image(image) => Some(Self::Image(image.clone())),
+            gpui::ClipboardEntry::ExternalPaths(paths) if !paths.paths().is_empty() => {
+                Some(Self::Files(paths.paths().to_vec()))
+            }
+            _ => None,
+        })
+    }
+}

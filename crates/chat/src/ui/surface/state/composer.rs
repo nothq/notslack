@@ -1,5 +1,6 @@
 mod attachments;
 mod links;
+pub(in crate::ui::surface) use links::slack_pasted_link;
 mod mentions;
 
 use std::ops::Range;

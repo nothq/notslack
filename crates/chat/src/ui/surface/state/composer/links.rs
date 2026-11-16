@@ -380,3 +380,130 @@ impl SurfaceState {
         }
     }
 }
+
+/// A pasted URL as Slack's composer shows it: the link, displayed without
+/// its `https://`. `None` unless the paste is one web address.
+pub(crate) fn slack_pasted_link(
+    text: &str,
+) -> Option<(String, crate::ui::surface::SlackComposerLinkUrl)> {
+    let text = text.trim();
+    if text.chars().any(char::is_whitespace)
+        || !(text.starts_with("https://") || text.starts_with("http://"))
+    {
+        return None;
+    }
+    let url = crate::ui::surface::SlackComposerLinkUrl::parse(text)?;
+    let display = text
+        .strip_prefix("https://")
+        .or_else(|| text.strip_prefix("http://"))
+        .unwrap_or(text)
+        .trim_end_matches('/');
+    (!display.is_empty()).then(|| (display.to_string(), url))
+}
+
+impl SurfaceState {
+    /// Puts a pasted URL into the main draft as a link over `range`.
+    /// Returns the draft's new text and where the caret goes, or `None` when
+    /// the draft can't change now (the paste then goes in as plain text).
+    pub(crate) fn paste_slack_composer_link(
+        &mut self,
+        range: std::ops::Range<usize>,
+        display: &str,
+        url: crate::ui::surface::SlackComposerLinkUrl,
+        cx: &mut Context<Self>,
+    ) -> Option<(String, usize)> {
+        if !self.can_mutate_current_slack_send_draft()
+            || self.slack_schedule_blocks_current_composer_mutation()
+        {
+            return None;
+        }
+        let mut document = self.snapshot_slack_send_draft_document();
+        let text = document.text();
+        if range.start > range.end
+            || range.end > text.len()
+            || !text.is_char_boundary(range.start)
+            || !text.is_char_boundary(range.end)
+        {
+            return None;
+        }
+        document.replace_range_with_link(range.clone(), display, url);
+        let text = document.text().to_string();
+        self.replace_slack_send_draft_document(document);
+        self.slack_main_composer_draft_changed(cx);
+        cx.notify();
+        Some((text, range.start + display.len()))
+    }
+}
+
+impl SurfaceState {
+    /// A right click in the main composer: over a link, opens its menu.
+    pub(crate) fn right_click_slack_composer(
+        &mut self,
+        offset: usize,
+        position: gpui::Point<gpui::Pixels>,
+        cx: &mut Context<Self>,
+    ) {
+        let link = self
+            .snapshot_slack_send_draft_document()
+            .link_range_at(offset);
+        self.slack_composer_link_menu =
+            link.map(|(range, url)| crate::ui::surface::SlackComposerLinkMenu {
+                range,
+                url,
+                position,
+            });
+        cx.notify();
+    }
+
+    pub(crate) fn close_slack_composer_link_menu(&mut self, cx: &mut Context<Self>) {
+        if self.slack_composer_link_menu.take().is_some() {
+            cx.notify();
+        }
+    }
+
+    /// Edit link: selects the link, then opens the link dialog on it.
+    pub(crate) fn edit_slack_composer_menu_link(&mut self, cx: &mut Context<Self>) {
+        let Some(menu) = self.slack_composer_link_menu.take() else {
+            return;
+        };
+        self.slack_composer_input.update(cx, |input, cx| {
+            input.set_selection(menu.range.clone(), false, cx);
+        });
+        self.open_slack_composer_link_dialog(cx);
+        cx.notify();
+    }
+
+    /// Display as URL: the link shows its full address instead of its text.
+    pub(crate) fn show_slack_composer_menu_link_as_url(&mut self, cx: &mut Context<Self>) {
+        let Some(menu) = self.slack_composer_link_menu.take() else {
+            return;
+        };
+        let address = menu.url.as_str().to_string();
+        if let Some((text, caret)) =
+            self.paste_slack_composer_link(menu.range, &address, menu.url, cx)
+        {
+            self.slack_composer_input.update(cx, |input, cx| {
+                input.set_text_and_move_cursor(text, caret, cx);
+            });
+        }
+    }
+}
+
+#[cfg(test)]
+mod pasted_link_tests {
+    use super::slack_pasted_link;
+
+    #[test]
+    fn a_pasted_web_address_becomes_a_link_shown_without_https() {
+        let (display, url) =
+            slack_pasted_link("https://github.com/GeniusEducation/sisui/pull/10470").unwrap();
+        assert_eq!(display, "github.com/GeniusEducation/sisui/pull/10470");
+        assert_eq!(
+            url.as_str(),
+            "https://github.com/GeniusEducation/sisui/pull/10470"
+        );
+        assert!(slack_pasted_link("see https://example.com").is_none());
+        assert!(slack_pasted_link("plain words").is_none());
+        assert!(slack_pasted_link("ftp://example.com").is_none());
+    }
+}

@@ -7,7 +7,8 @@ use super::{
     TextInputEnterBehavior, TextInputGhost, TextInputHighlight, TextInputKeyAction,
     TextInputKeyDownPreAction, TextInputKeyPreAction, TextInputLayoutChange, TextInputMode,
     TextInputPointerSelectionChange, TextInputPreMutationActionHandler, TextInputProps,
-    TextInputStateChange, TextInputStyle, TextInputVerticalBoundaryAction, TextInputWrapMode,
+    TextInputRightClick, TextInputStateChange, TextInputStyle, TextInputVerticalBoundaryAction,
+    TextInputWrapMode,
 };
 
 impl TextInputProps {
@@ -59,6 +60,7 @@ impl TextInputProps {
             on_pointer_selection: None,
             on_pre_mutation_action: None,
             on_atom_click: None,
+            on_right_click: None,
             on_focus: None,
             on_backspace_when_empty: None,
             on_backspace_at_start: None,
@@ -194,6 +196,11 @@ impl TextInputProps {
 
     /// Handle a left click strictly inside an atom's display text instead of
     /// moving the caret or focus.
+    pub fn on_right_click(mut self, on_right_click: TextInputRightClick) -> Self {
+        self.on_right_click = Some(on_right_click);
+        self
+    }
+
     pub fn on_atom_click(mut self, on_atom_click: TextInputAtomClick) -> Self {
         self.on_atom_click = Some(on_atom_click);
         self

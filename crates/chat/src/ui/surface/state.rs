@@ -34,6 +34,7 @@ mod aux_actions;
 mod bookmark_folder;
 mod channel_details;
 mod composer;
+pub(in crate::ui::surface) use composer::slack_pasted_link;
 mod composer_capture;
 mod conversation_files;
 mod data;

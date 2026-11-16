@@ -46,9 +46,9 @@ pub use props::{
     TextInputKeyDownPreAction, TextInputKeyPreAction, TextInputLayoutChange, TextInputMode,
     TextInputPointerSelection, TextInputPointerSelectionChange, TextInputPointerSelectionPhase,
     TextInputPreMutationAction, TextInputPreMutationActionHandler, TextInputPreMutationDecision,
-    TextInputProps, TextInputReplacementOrigin, TextInputSnapshot, TextInputStateChange,
-    TextInputStyle, TextInputVerticalBoundary, TextInputVerticalBoundaryAction,
-    TextInputVisualLine, TextInputWrapMode,
+    TextInputProps, TextInputReplacementOrigin, TextInputRightClick, TextInputSnapshot,
+    TextInputStateChange, TextInputStyle, TextInputVerticalBoundary,
+    TextInputVerticalBoundaryAction, TextInputVisualLine, TextInputWrapMode,
 };
 
 pub struct TextInput {

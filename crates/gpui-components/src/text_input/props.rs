@@ -33,6 +33,10 @@ pub type TextInputPreMutationActionHandler = Rc<
 /// Invoked with the index of the clicked atom and its window-space bounds.
 pub type TextInputAtomClick =
     Rc<dyn Fn(usize, Bounds<Pixels>, &mut Window, &mut Context<TextInput>)>;
+/// Invoked on a right click with the content offset under the pointer and
+/// the pointer's window position.
+pub type TextInputRightClick =
+    Rc<dyn Fn(usize, gpui::Point<Pixels>, &mut Window, &mut Context<TextInput>)>;
 
 /// Inline token drawn as one non-editable unit in place of a content range.
 ///
@@ -285,6 +289,7 @@ pub struct TextInputProps {
     pub on_pointer_selection: Option<TextInputPointerSelectionChange>,
     pub on_pre_mutation_action: Option<TextInputPreMutationActionHandler>,
     pub on_atom_click: Option<TextInputAtomClick>,
+    pub on_right_click: Option<TextInputRightClick>,
     pub on_focus: Option<TextInputAction>,
     pub on_backspace_when_empty: Option<TextInputAction>,
     pub on_backspace_at_start: Option<TextInputKeyAction>,

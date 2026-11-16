@@ -2,7 +2,7 @@ use super::{
     TextInputAction, TextInputAtomClick, TextInputChange, TextInputKeyAction,
     TextInputKeyDownPreAction, TextInputKeyPreAction, TextInputLayoutChange,
     TextInputPointerSelectionChange, TextInputPreMutationActionHandler, TextInputProps,
-    TextInputStateChange, TextInputVerticalBoundaryAction,
+    TextInputRightClick, TextInputStateChange, TextInputVerticalBoundaryAction,
 };
 
 pub(super) struct TextInputCallbacks {
@@ -34,6 +34,7 @@ pub(super) struct TextInputCallbacks {
     pub(super) on_pointer_selection: Option<TextInputPointerSelectionChange>,
     pub(super) on_pre_mutation_action: Option<TextInputPreMutationActionHandler>,
     pub(super) on_atom_click: Option<TextInputAtomClick>,
+    pub(super) on_right_click: Option<TextInputRightClick>,
     pub(super) on_focus: Option<TextInputAction>,
     pub(super) on_backspace_when_empty: Option<TextInputAction>,
     pub(super) on_backspace_at_start: Option<TextInputKeyAction>,
@@ -72,6 +73,7 @@ impl TextInputCallbacks {
             on_pointer_selection: props.on_pointer_selection.clone(),
             on_pre_mutation_action: props.on_pre_mutation_action.clone(),
             on_atom_click: props.on_atom_click.clone(),
+            on_right_click: props.on_right_click.clone(),
             on_focus: props.on_focus.clone(),
             on_backspace_when_empty: props.on_backspace_when_empty.clone(),
             on_backspace_at_start: props.on_backspace_at_start.clone(),

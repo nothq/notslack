@@ -13,6 +13,23 @@ struct SelectionPointer {
 }
 
 impl TextInput {
+    pub(super) fn on_right_mouse_down(
+        &mut self,
+        event: &MouseDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(on_right_click) = self.callbacks.on_right_click.clone() else {
+            return;
+        };
+        if self.disabled {
+            return;
+        }
+        let offset = self.floor_grapheme_boundary(self.index_for_mouse_position(event.position));
+        cx.stop_propagation();
+        on_right_click(offset, event.position, window, cx);
+    }
+
     pub(super) fn on_mouse_down(
         &mut self,
         event: &MouseDownEvent,
