@@ -1,6 +1,9 @@
 use crate::model::{SlackConversationTab, SlackConversationTabTarget};
 use serde_json::{Map, Value};
 
+/// The channel's tabs. A tab Slack describes in a way notslack can't read
+/// is left out with a warning, rather than failing the whole channel; Slack's
+/// own client reads tab data the same forgiving way.
 pub(super) fn slack_conversation_tabs(
     channel: &Value,
     conversation_id: &str,
@@ -14,10 +17,19 @@ pub(super) fn slack_conversation_tabs(
     let tabs = tabs.as_array().ok_or_else(|| {
         format!("Slack conversations.info returned non-array tabs for {conversation_id}")
     })?;
-    tabs.iter()
+    Ok(tabs
+        .iter()
         .enumerate()
-        .map(|(index, tab)| slack_conversation_tab(tab, conversation_id, index))
-        .collect()
+        .filter_map(
+            |(index, tab)| match slack_conversation_tab(tab, conversation_id, index) {
+                Ok(tab) => Some(tab),
+                Err(error) => {
+                    eprintln!("notslack skipped a conversation tab: {error}");
+                    None
+                }
+            },
+        )
+        .collect())
 }
 
 fn slack_conversation_tab(
@@ -182,4 +194,29 @@ fn optional_tab_bool(
             "Slack conversations.info returned non-boolean tab {index} {field} for {conversation_id}"
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::slack_conversation_tabs;
+    use crate::model::SlackConversationTabTarget;
+
+    #[test]
+    fn a_tab_slack_describes_oddly_is_skipped_not_fatal() {
+        let channel = json!({
+            "properties": {
+                "tabs": [
+                    {"id": "files", "type": "files", "label": "Files"},
+                    {"id": "folder-1", "type": "folder", "label": "Docs"},
+                    {"id": "pins", "type": "pins"},
+                ]
+            }
+        });
+        let tabs = slack_conversation_tabs(&channel, "C1").unwrap();
+        assert_eq!(tabs.len(), 2);
+        assert_eq!(tabs[0].target, SlackConversationTabTarget::Files);
+        assert_eq!(tabs[1].target, SlackConversationTabTarget::Pins);
+    }
 }
