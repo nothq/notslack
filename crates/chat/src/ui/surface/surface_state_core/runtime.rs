@@ -84,6 +84,10 @@ impl SurfaceState {
             ListAlignment::Top,
             px(SLACK_MESSAGE_LIST_OVERDRAW),
         );
+        // At the bottom, stay there as messages grow (an edit, an image
+        // loading), as Slack does; scrolling up or jumping elsewhere stops
+        // following until the list is back at the end.
+        state.set_follow_mode(gpui::FollowMode::Tail);
         Self::position_slack_message_list_for_conversation(&state, message_rows);
         state
     }

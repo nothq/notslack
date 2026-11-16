@@ -23,6 +23,9 @@ struct SlackConversationRefreshInstallOutcome {
     authored_client_message_ids: Arc<SlackAuthoredClientMessageIds>,
 }
 
+/// How close to the bottom still counts as reading the newest messages.
+const SLACK_FOLLOW_END_TOLERANCE: f32 = 48.0;
+
 impl SurfaceState {
     pub(in crate::ui::surface::state) fn schedule_slack_conversation_refresh(
         &mut self,
@@ -223,8 +226,13 @@ impl SurfaceState {
     fn capture_slack_conversation_refresh_position(&self) -> SlackConversationRefreshPosition {
         let scroll_top = self.slack_message_list_state.logical_scroll_top();
         let previous_row_count = self.slack_message_rows.len();
+        // At the bottom (or as good as) means the new messages scroll in,
+        // as in Slack, rather than waiting behind a "new messages" button.
         let following_end = self.slack_message_list_state.is_following_tail()
-            || scroll_top.item_ix >= previous_row_count;
+            || scroll_top.item_ix >= previous_row_count
+            || self
+                .slack_message_list_state
+                .is_near_end(gpui::px(SLACK_FOLLOW_END_TOLERANCE));
         let anchor_message_id = (!following_end)
             .then(|| {
                 self.slack_message_rows
