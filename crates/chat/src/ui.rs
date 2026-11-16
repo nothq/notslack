@@ -49,7 +49,8 @@ pub(crate) const SLACK_WORKSPACE_RAIL_WIDTH: f32 = 60.0;
 pub(crate) const SLACK_NAV_RAIL_WIDTH: f32 = 70.0;
 pub(crate) const SLACK_TOP_NAV_RAIL_WIDTH: f32 = SLACK_WORKSPACE_RAIL_WIDTH + SLACK_NAV_RAIL_WIDTH;
 pub(crate) const SLACK_SIDEBAR_DEFAULT_RATIO: f32 = 0.38;
-pub(crate) const SLACK_SIDEBAR_MIN_WIDTH: f32 = 320.0;
+/// As narrow as Slack lets its sidebar go; labels shorten with an ellipsis.
+pub(crate) const SLACK_SIDEBAR_MIN_WIDTH: f32 = 180.0;
 pub(crate) const SLACK_SIDEBAR_MAX_WIDTH: f32 = 720.0;
 pub(crate) const SLACK_MAIN_MIN_WIDTH: f32 = 360.0;
 pub(crate) const SLACK_WORKSPACE_FRAME_RIGHT_MARGIN: f32 = 4.0;

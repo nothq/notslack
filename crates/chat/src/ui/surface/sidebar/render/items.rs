@@ -198,7 +198,15 @@ impl SurfaceState {
             .font_weight(FontWeight::MEDIUM)
             .text_color(rgb(palette.sidebar_section_text))
             .child(self.render_slack_section_header_indicator(indicator, label, collapsible, cx))
-            .child(label.to_string())
+            .child(
+                div()
+                    .min_w(px(0.0))
+                    .flex_shrink(1.0)
+                    .overflow_hidden()
+                    .whitespace_nowrap()
+                    .text_ellipsis()
+                    .child(label.to_string()),
+            )
             .into_any_element()
     }
 

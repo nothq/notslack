@@ -202,6 +202,11 @@ impl SurfaceState {
             ))
             .child(
                 div()
+                    .min_w(px(0.0))
+                    .flex_shrink(1.0)
+                    .overflow_hidden()
+                    .whitespace_nowrap()
+                    .text_ellipsis()
                     .text_size(px(15.0))
                     .font_weight(if spec.selected {
                         FontWeight::MEDIUM

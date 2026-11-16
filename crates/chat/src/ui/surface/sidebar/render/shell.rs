@@ -240,8 +240,15 @@ impl SurfaceState {
                     this.open_slack_workspace_panel(cx);
                 }
             }))
+            .min_w(px(0.0))
+            .flex_shrink(1.0)
             .child(
                 div()
+                    .min_w(px(0.0))
+                    .flex_shrink(1.0)
+                    .overflow_hidden()
+                    .whitespace_nowrap()
+                    .text_ellipsis()
                     .text_size(px(18.0))
                     .font_weight(FontWeight::BLACK)
                     .text_color(rgb(palette.sidebar_header_text))
