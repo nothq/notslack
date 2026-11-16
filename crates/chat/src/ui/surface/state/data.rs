@@ -261,6 +261,8 @@ pub struct SurfaceStateData {
     pub(crate) slack_message_edit_generation: u64,
     pub(crate) slack_pending_message_edit: Option<SlackMessageEditRequest>,
     pub(crate) slack_message_delete_modal: Option<SlackMessageDeleteModal>,
+    /// The window title last set, so it is only set when it changes.
+    pub(crate) slack_window_title: String,
     pub(crate) slack_message_delete_generation: u64,
     pub(crate) slack_pending_message_delete: Option<SlackMessageDeleteRequest>,
     pub(crate) slack_message_mark_unread_generation: u64,

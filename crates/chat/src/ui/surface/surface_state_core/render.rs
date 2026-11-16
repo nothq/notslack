@@ -171,6 +171,7 @@ impl Render for SurfaceState {
         self.focus_pending_slack_surface_controls(window, cx);
         self.focus_pending_slack_text_inputs(window, cx);
         self.ensure_slack_render_observers(window, cx);
+        self.sync_slack_window_title(window);
         if self.embedded_shell {
             self.render_chat_preview(window, cx)
         } else {
