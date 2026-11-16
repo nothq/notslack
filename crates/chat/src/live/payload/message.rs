@@ -1,4 +1,5 @@
 pub(crate) mod attachments;
+mod date_tokens;
 mod history;
 mod rich_text;
 mod send_receipt;
@@ -57,12 +58,13 @@ pub(super) fn slack_message_from_value_with_context(
 }
 
 pub(crate) fn slack_message_from_value_with_context_in_timezone(
-    message: Value,
+    mut message: Value,
     users: &HashMap<String, Value>,
     sidebar_snapshot: Option<&SlackSidebarSnapshot>,
     self_user_id: Option<&str>,
     timezone: Tz,
 ) -> SlackMessage {
+    date_tokens::format_slack_date_tokens(&mut message, timezone);
     let user_id = message
         .get("user")
         .and_then(Value::as_str)
