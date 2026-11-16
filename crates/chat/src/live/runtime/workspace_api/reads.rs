@@ -10,6 +10,10 @@ macro_rules! impl_workspace_api_reads {
             self.loader.mutate_self_status(status)
         }
 
+        fn pause_slack_notifications(&self, minutes: Option<u32>) -> Result<bool, String> {
+            self.loader.pause_self_notifications(minutes)
+        }
+
         fn mutate_slack_self_presence(
             &self,
             presence: crate::model::SlackUserPresence,

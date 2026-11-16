@@ -100,6 +100,7 @@ pub(crate) enum SlackShellIcon {
     FormatUnderline,
     FormatStrikethrough,
     FormatLink,
+    ExternalLink,
     FormatOrderedList,
     FormatBulletedList,
     FormatBlockquote,

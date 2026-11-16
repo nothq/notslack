@@ -7,7 +7,8 @@ use gpui_components::text_input::{
 
 use super::{Context, SlackProfilePanelState, SurfaceState};
 use crate::ui::surface::{
-    slack_palette, SlackSelfStatusDialog, SlackStatusExpirationPreset, WorkspaceApi,
+    slack_palette, SlackSelfStatusDialog, SlackStatusExpirationPreset, SlackStatusSuggestion,
+    WorkspaceApi,
 };
 use crate::ui::{
     alpha, px, rgb, spawn_background_task_for_entity, SlackSelfStatus, SlackUserPresence,
@@ -23,6 +24,7 @@ impl SurfaceState {
             return;
         }
         self.slack_self_menu_open = !self.slack_self_menu_open;
+        self.slack_self_menu_notifications_open = false;
         self.slack_self_settings_error = None;
         cx.notify();
     }
@@ -32,6 +34,7 @@ impl SurfaceState {
             return;
         }
         self.slack_self_menu_open = false;
+        self.slack_self_menu_notifications_open = false;
         cx.notify();
     }
 
@@ -57,6 +60,7 @@ impl SurfaceState {
             emoji: status
                 .map(|status| status.emoji().to_string())
                 .unwrap_or_default(),
+            had_status: status.is_some(),
             ..Default::default()
         });
         self.slack_self_menu_open = false;
@@ -79,18 +83,84 @@ impl SurfaceState {
         }
     }
 
-    pub(crate) fn cycle_slack_self_status_expiration(&mut self, cx: &mut Context<Self>) {
-        let Some(dialog) = self.slack_self_status_dialog.as_mut() else {
-            return;
-        };
-        let index = SlackStatusExpirationPreset::ALL
-            .iter()
-            .position(|preset| *preset == dialog.expiration)
-            .expect("Slack status expiration preset must be known");
-        dialog.expiration =
-            SlackStatusExpirationPreset::ALL[(index + 1) % SlackStatusExpirationPreset::ALL.len()];
-        dialog.error = None;
-        cx.notify();
+    pub(crate) fn update_slack_self_status_dialog(
+        &mut self,
+        update: impl FnOnce(&mut SlackSelfStatusDialog),
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(dialog) = self
+            .slack_self_status_dialog
+            .as_mut()
+            .filter(|dialog| !dialog.saving)
+        {
+            update(dialog);
+            dialog.error = None;
+            cx.notify();
+        }
+    }
+
+    /// Fills the dialog with one of Slack's suggested statuses.
+    pub(crate) fn choose_slack_status_suggestion(
+        &mut self,
+        suggestion: SlackStatusSuggestion,
+        cx: &mut Context<Self>,
+    ) {
+        self.update_slack_self_status_dialog(
+            |dialog| {
+                dialog.text = suggestion.text.to_string();
+                dialog.emoji = format!(":{}:", suggestion.emoji);
+                dialog.expiration = suggestion.expiration;
+                dialog.emoji_picker_open = false;
+                dialog.expiration_menu_open = false;
+            },
+            cx,
+        );
+    }
+
+    pub(crate) fn toggle_slack_status_emoji_picker(&mut self, cx: &mut Context<Self>) {
+        self.update_slack_self_status_dialog(
+            |dialog| {
+                dialog.emoji_picker_open = !dialog.emoji_picker_open;
+                dialog.expiration_menu_open = false;
+                dialog.emoji_query.clear();
+            },
+            cx,
+        );
+    }
+
+    pub(crate) fn choose_slack_status_emoji(&mut self, shortcode: &str, cx: &mut Context<Self>) {
+        let emoji = format!(":{}:", shortcode.trim_matches(':'));
+        self.update_slack_self_status_dialog(
+            |dialog| {
+                dialog.emoji = emoji;
+                dialog.emoji_picker_open = false;
+            },
+            cx,
+        );
+    }
+
+    pub(crate) fn toggle_slack_status_expiration_menu(&mut self, cx: &mut Context<Self>) {
+        self.update_slack_self_status_dialog(
+            |dialog| {
+                dialog.expiration_menu_open = !dialog.expiration_menu_open;
+                dialog.emoji_picker_open = false;
+            },
+            cx,
+        );
+    }
+
+    pub(crate) fn choose_slack_status_expiration(
+        &mut self,
+        expiration: SlackStatusExpirationPreset,
+        cx: &mut Context<Self>,
+    ) {
+        self.update_slack_self_status_dialog(
+            |dialog| {
+                dialog.expiration = expiration;
+                dialog.expiration_menu_open = false;
+            },
+            cx,
+        );
     }
 
     pub(crate) fn submit_slack_self_status(&mut self, cx: &mut Context<Self>) {
@@ -101,9 +171,17 @@ impl SurfaceState {
         else {
             return;
         };
-        let status = match dialog.expiration.expiration().and_then(|expiration| {
-            SlackSelfStatus::new(dialog.text.clone(), dialog.emoji.clone(), expiration)
-        }) {
+        // Like Slack, a status with text and no emoji gets a speech balloon.
+        let emoji = if dialog.emoji.trim().is_empty() && !dialog.text.trim().is_empty() {
+            ":speech_balloon:".to_string()
+        } else {
+            dialog.emoji.clone()
+        };
+        let status = match dialog
+            .expiration
+            .expiration()
+            .and_then(|expiration| SlackSelfStatus::new(dialog.text.clone(), emoji, expiration))
+        {
             Ok(status) => status,
             Err(error) => {
                 self.slack_self_status_dialog
@@ -263,9 +341,15 @@ impl SurfaceState {
                 })
                 .ok();
         });
+        // The box around it, with the emoji button, draws the border.
+        let mut style = self.slack_self_status_input_style();
+        style.background = gpui::transparent_black();
+        style.border = gpui::transparent_black();
+        style.focused_border = gpui::transparent_black();
+        style.padding_x = px(4.0);
         let props = TextInputProps::single_line(dialog.text.clone())
             .placeholder("What’s your status?")
-            .style(self.slack_self_status_input_style())
+            .style(style)
             .accessibility(
                 self.slack_self_status_text_accessibility_id.clone(),
                 "Status text",
@@ -291,22 +375,20 @@ impl SurfaceState {
             surface
                 .update(cx, |surface, cx| {
                     if let Some(dialog) = surface.slack_self_status_dialog.as_mut() {
-                        dialog.emoji = value;
-                        dialog.error = None;
+                        dialog.emoji_query = value;
                         cx.notify();
                     }
                 })
                 .ok();
         });
-        let props = TextInputProps::single_line(dialog.emoji.clone())
-            .placeholder(":speech_balloon:")
+        let props = TextInputProps::single_line(dialog.emoji_query.clone())
+            .placeholder("Search all emoji")
             .style(self.slack_self_status_input_style())
             .accessibility(
                 self.slack_self_status_emoji_accessibility_id.clone(),
-                "Status emoji",
+                "Search emoji",
             )
             .on_change(on_change)
-            .on_submit(self.slack_self_status_submit_action(cx))
             .on_escape(self.slack_self_status_close_action(cx));
         self.slack_self_status_emoji_input
             .update(cx, |input, cx| input.apply_props(props, cx));

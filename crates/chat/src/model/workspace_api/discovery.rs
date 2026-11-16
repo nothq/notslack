@@ -13,6 +13,11 @@ macro_rules! slack_workspace_discovery_api {
         ) -> Result<crate::model::SlackSelfStatus, String> {
             Err("Slack status mutation is unavailable for this workspace runtime".to_string())
         }
+        /// Pauses notifications for `minutes`, or resumes them with `None`;
+        /// returns whether they are paused afterwards.
+        fn pause_slack_notifications(&self, _minutes: Option<u32>) -> Result<bool, String> {
+            Err("Pausing notifications is unavailable for this workspace runtime".to_string())
+        }
         fn mutate_slack_self_presence(
             &self,
             _presence: crate::model::SlackUserPresence,

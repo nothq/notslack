@@ -144,7 +144,7 @@ impl SurfaceState {
                 |this, presence| {
                     this.child(self.render_slack_rail_self_presence(
                         presence,
-                        workspace.rail_badges.self_notifications_paused,
+                        self.slack_self_notifications_paused(workspace),
                         cx,
                     ))
                 },
