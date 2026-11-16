@@ -110,15 +110,31 @@ impl SurfaceState {
         presentation: &SlackComposerAttachmentPresentation,
         visuals: SlackComposerAttachmentVisuals,
         cx: &mut Context<Self>,
-    ) -> Div {
+    ) -> gpui::Stateful<Div> {
         let palette = slack_palette(self.appearance_mode);
+        let preview = visuals
+            .image
+            .clone()
+            .map(|image| (presentation.title.clone(), image));
         div()
+            .id(format!(
+                "slack-composer-attachment-preview-{}",
+                presentation.file_id
+            ))
             .size_full()
             .rounded(px(12.0))
             .overflow_hidden()
             .flex()
             .items_center()
             .justify_center()
+            // Clicking an image opens it large, as in Slack.
+            .when_some(preview, |this, (title, image)| {
+                this.cursor_pointer()
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        this.slack_attachment_preview = Some((title.clone(), image.clone()));
+                        cx.notify();
+                    }))
+            })
             .when_some(visuals.image, |this, image| {
                 this.child(img(image).size_full().object_fit(ObjectFit::Cover))
             })

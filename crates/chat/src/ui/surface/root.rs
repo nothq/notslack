@@ -1,5 +1,6 @@
 mod activity;
 mod all_threads;
+mod attachment_preview;
 mod cached_views;
 mod channel_details;
 mod channel_menu;
@@ -238,6 +239,10 @@ impl SurfaceState {
             .when(self.slack_message_delete_modal.is_some(), |this| {
                 this.child(self.render_slack_message_delete_layer(cx))
             })
+            .when_some(
+                self.render_slack_attachment_preview_layer(cx),
+                |this, layer| this.child(layer),
+            )
             .when(self.slack_self_status_dialog.is_some(), |this| {
                 this.child(self.render_slack_self_status_layer(cx))
             })

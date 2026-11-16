@@ -261,6 +261,8 @@ pub struct SurfaceStateData {
     pub(crate) slack_message_edit_generation: u64,
     pub(crate) slack_pending_message_edit: Option<SlackMessageEditRequest>,
     pub(crate) slack_message_delete_modal: Option<SlackMessageDeleteModal>,
+    /// A draft attachment's image opened large, with its file name.
+    pub(crate) slack_attachment_preview: Option<(gpui::SharedString, Arc<gpui::Image>)>,
     pub(crate) slack_message_delete_generation: u64,
     pub(crate) slack_pending_message_delete: Option<SlackMessageDeleteRequest>,
     pub(crate) slack_message_mark_unread_generation: u64,
