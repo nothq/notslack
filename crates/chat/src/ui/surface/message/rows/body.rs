@@ -22,6 +22,9 @@ pub(in crate::ui::surface) struct SlackMessageSelectionContext {
     message_index: usize,
     message_id: SharedString,
     next_fragment_index: Cell<usize>,
+    /// Text that closes the previous fragment in copied text, such as the
+    /// `]` after a timestamp copied as `[12:36 AM]`.
+    pending_close: Cell<&'static str>,
 }
 
 impl SlackMessageSelectionContext {
@@ -37,6 +40,7 @@ impl SlackMessageSelectionContext {
             message_index,
             message_id: message_id.into(),
             next_fragment_index: Cell::new(0),
+            pending_close: Cell::new(""),
         }
     }
 
@@ -47,6 +51,19 @@ impl SlackMessageSelectionContext {
         self.next_position_with_separator(fragment_id, "\n")
     }
 
+    /// Like [`Self::next_position_with_separator`], and `close` follows
+    /// this fragment in copied text.
+    pub(in crate::ui::surface) fn next_position_enclosed(
+        &self,
+        fragment_id: SharedString,
+        separator_within_message: &'static str,
+        close: &'static str,
+    ) -> SelectableTextPosition {
+        let position = self.next_position_with_separator(fragment_id, separator_within_message);
+        self.pending_close.set(close);
+        position
+    }
+
     pub(in crate::ui::surface) fn next_position_with_separator(
         &self,
         fragment_id: SharedString,
@@ -54,12 +71,12 @@ impl SlackMessageSelectionContext {
     ) -> SelectableTextPosition {
         let fragment_index = self.next_fragment_index.get();
         self.next_fragment_index.set(fragment_index + 1);
-        let separator_before = if fragment_index > 0 || self.row_index > 0 || self.message_index > 0
-        {
+        let separator = if fragment_index > 0 || self.row_index > 0 || self.message_index > 0 {
             separator_within_message
         } else {
             ""
         };
+        let separator_before = format!("{}{separator}", self.pending_close.take());
         SelectableTextPosition::new(
             self.document_id.clone(),
             SelectableTextMessage {

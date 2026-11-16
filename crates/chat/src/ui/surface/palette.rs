@@ -234,3 +234,9 @@ fn light_slack_palette() -> SlackPalette {
         attachment_muted_text: 0x696969,
     }
 }
+
+/// Selected message text: Slack's blue, dark enough that the light text on
+/// it stays readable.
+pub(crate) fn slack_text_selection_color() -> gpui::Hsla {
+    crate::ui::alpha(0x1264a3, 0.6)
+}

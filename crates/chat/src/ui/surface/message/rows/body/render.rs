@@ -77,8 +77,13 @@ fn slack_message_selectable_text(
 ) -> SelectableText {
     let document_position =
         selection_context.map(|context| context.next_position(element_id.clone()));
-    SelectableText::new(element_id, text, styled_text, rgb(0xb0d4fc).into())
-        .when_some(document_position, SelectableText::in_document)
+    SelectableText::new(
+        element_id,
+        text,
+        styled_text,
+        crate::ui::surface::slack_text_selection_color(),
+    )
+    .when_some(document_position, SelectableText::in_document)
 }
 
 fn with_slack_message_link_clicks(

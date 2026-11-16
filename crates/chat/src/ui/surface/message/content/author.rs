@@ -59,14 +59,14 @@ impl SurfaceState {
                         timestamp_element_id.clone(),
                         text,
                         styled_text,
-                        rgb(0xb0d4fc).into(),
+                        crate::ui::surface::slack_text_selection_color(),
                     )
-                    .in_document(
-                        selection_context.next_position_with_separator(
-                            timestamp_element_id.clone().into(),
-                            "\n\u{a0}\u{a0}",
-                        ),
-                    ),
+                    // Copies as Slack does: "Aczell  [12:36 AM]".
+                    .in_document(selection_context.next_position_enclosed(
+                        timestamp_element_id.clone().into(),
+                        "  [",
+                        "]",
+                    )),
                 )
             })
             .into_any_element()
@@ -126,7 +126,7 @@ impl SurfaceState {
             element_id.clone(),
             text.clone(),
             styled_text,
-            rgb(0xb0d4fc).into(),
+            crate::ui::surface::slack_text_selection_color(),
         )
         .in_document(selection_context.next_position(element_id.clone().into()));
         let Some(user_id) = row.user_id.clone() else {
