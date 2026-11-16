@@ -17,6 +17,10 @@ pub(super) static SELECTED_TEXT_ID: AtomicU64 = AtomicU64::new(0);
 
 pub(super) type SelectedTextRange = Rc<RefCell<Option<Range<usize>>>>;
 pub(super) type SelectableTextLinkHandler = Rc<dyn Fn(usize, &mut Window, &mut App)>;
+/// Told which link the pointer is over (`None` when it left them all) and
+/// where the pointer is.
+pub(super) type SelectableTextLinkHoverHandler =
+    Rc<dyn Fn(Option<usize>, Point<Pixels>, &mut Window, &mut App)>;
 pub(super) type SelectableTextAutoscrollHandler = Rc<dyn Fn(Pixels, &mut Window, &mut App)>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -97,6 +101,7 @@ pub(super) struct SelectableTextState {
     pub(super) mouse_down_link_index: Rc<Cell<Option<usize>>>,
     pub(super) mouse_dragged: Rc<Cell<bool>>,
     pub(super) selected_range: SelectedTextRange,
+    pub(super) hovered_link_index: Rc<Cell<Option<usize>>>,
 }
 
 impl Default for SelectableTextState {
@@ -109,6 +114,7 @@ impl Default for SelectableTextState {
             mouse_down_link_index: Rc::default(),
             mouse_dragged: Rc::default(),
             selected_range: Rc::default(),
+            hovered_link_index: Rc::default(),
         }
     }
 }

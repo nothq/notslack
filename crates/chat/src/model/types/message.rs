@@ -150,6 +150,14 @@ pub struct SlackProfile {
     pub phone: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timezone_label: Option<String>,
+    /// The IANA zone, for showing the person's local time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timezone_id: Option<String>,
+    /// The status emoji code, such as `:spiral_calendar_pad:`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status_emoji: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pronouns: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub avatar_label: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

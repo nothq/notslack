@@ -8,6 +8,7 @@ mod directory;
 mod drafts_sent;
 mod files;
 mod history;
+mod hover_card;
 mod later;
 mod message_delete;
 mod message_forward;
@@ -237,6 +238,9 @@ impl SurfaceState {
             })
             .when(self.slack_message_delete_modal.is_some(), |this| {
                 this.child(self.render_slack_message_delete_layer(cx))
+            })
+            .when_some(self.render_slack_hover_card(cx), |this, card| {
+                this.child(card)
             })
             .when(self.slack_self_status_dialog.is_some(), |this| {
                 this.child(self.render_slack_self_status_layer(cx))

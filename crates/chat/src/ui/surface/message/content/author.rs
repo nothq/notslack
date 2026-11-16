@@ -133,7 +133,17 @@ impl SurfaceState {
             return slack_unlinked_selectable_author(selectable);
         };
         let keyboard_user_id = user_id.clone();
+        let hover_user_id = user_id.clone();
         let surface = cx.entity().downgrade();
+        let hover_surface = surface.clone();
+        let selectable = selectable.on_link_hover(move |range_index, position, _window, cx| {
+            let user_id = range_index.map(|_| hover_user_id.clone());
+            hover_surface
+                .update(cx, |surface, cx| {
+                    surface.hover_slack_person(user_id.as_deref(), position, cx);
+                })
+                .ok();
+        });
         let linked_author = selectable.on_link_click(
             std::iter::once(0..text.len()).collect::<Arc<[Range<usize>]>>(),
             move |_, _window, cx| {

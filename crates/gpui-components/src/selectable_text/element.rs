@@ -232,6 +232,7 @@ impl Element for SelectableText {
                 );
             }
             self.bind_hover_cursor(hitbox, &text_layout, window);
+            self.bind_link_hover(hitbox, &text_layout, &state, window);
             self.bind_mouse_down(hitbox, &text_layout, &state, window);
             self.bind_mouse_move(&text_layout, &state, window);
             self.bind_mouse_up(&text_layout, &state, window);

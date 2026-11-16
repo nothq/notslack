@@ -15,7 +15,10 @@ use std::{
     sync::Arc,
 };
 
-use state::{SelectableTextAutoscrollHandler, SelectableTextLinkHandler, SelectableTextOrder};
+use state::{
+    SelectableTextAutoscrollHandler, SelectableTextLinkHandler, SelectableTextLinkHoverHandler,
+    SelectableTextOrder,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SelectableTextPosition {
@@ -90,6 +93,7 @@ pub struct SelectableText {
     document_position: Option<SelectableTextPosition>,
     link_ranges: Arc<[Range<usize>]>,
     link_handler: Option<SelectableTextLinkHandler>,
+    link_hover_handler: Option<SelectableTextLinkHoverHandler>,
 }
 
 impl SelectableText {
@@ -107,6 +111,7 @@ impl SelectableText {
             document_position: None,
             link_ranges: Arc::default(),
             link_handler: None,
+            link_hover_handler: None,
         }
     }
 
@@ -122,6 +127,17 @@ impl SelectableText {
     ) -> Self {
         self.link_ranges = ranges.into();
         self.link_handler = Some(Rc::new(handler));
+        self
+    }
+
+    /// Calls `handler` when the pointer moves onto one of the link ranges
+    /// given to [`Self::on_link_click`] (with its index) or off them all
+    /// (`None`), with the pointer's position.
+    pub fn on_link_hover(
+        mut self,
+        handler: impl Fn(Option<usize>, gpui::Point<Pixels>, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.link_hover_handler = Some(Rc::new(handler));
         self
     }
 }

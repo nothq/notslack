@@ -40,6 +40,37 @@ impl SelectableText {
         window.set_cursor_style(cursor, hitbox);
     }
 
+    pub(super) fn bind_link_hover(
+        &self,
+        hitbox: &Hitbox,
+        text_layout: &TextLayout,
+        state: &SelectableTextState,
+        window: &mut Window,
+    ) {
+        let Some(handler) = self.link_hover_handler.clone() else {
+            return;
+        };
+        let hitbox = hitbox.clone();
+        let text_layout = text_layout.clone();
+        let text = self.text.clone();
+        let link_ranges = self.link_ranges.clone();
+        let hovered = state.hovered_link_index.clone();
+        window.on_mouse_event(move |event: &MouseMoveEvent, phase, window, cx| {
+            if phase != DispatchPhase::Bubble {
+                return;
+            }
+            let index = hitbox.is_hovered(window).then(|| {
+                let text_index = text_index_for_position(&text, &text_layout, event.position);
+                link_range_index_at_index(&link_ranges, text_index)
+            });
+            let index = index.flatten();
+            if hovered.get() != index {
+                hovered.set(index);
+                handler(index, event.position, window, cx);
+            }
+        });
+    }
+
     pub(super) fn bind_mouse_move(
         &self,
         text_layout: &TextLayout,

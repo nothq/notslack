@@ -152,7 +152,9 @@ impl SurfaceState {
         );
         self.slack_members_deferred_conversation_id = Some(conversation_id.to_string());
         if Self::slack_load_profiling_enabled() {
-            eprintln!("[notslack-slack-members-profile] stage=deferred conversation={conversation_id}");
+            eprintln!(
+                "[notslack-slack-members-profile] stage=deferred conversation={conversation_id}"
+            );
         }
     }
 

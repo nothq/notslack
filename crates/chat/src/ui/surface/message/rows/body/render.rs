@@ -91,8 +91,24 @@ fn with_slack_message_link_clicks(
         return selectable_text.into_any_element();
     }
     let links = links.clone();
+    let hover_links = links.clone();
     let surface = cx.entity().downgrade();
+    let hover_surface = surface.clone();
     selectable_text
+        .on_link_hover(move |range_index, position, _window, cx| {
+            // A mention opens the person's profile card, as in Slack.
+            let user_id = range_index
+                .and_then(|index| hover_links.get(index))
+                .and_then(|link| match &link.target {
+                    SlackMessageBodyTarget::User(user_id) => Some(user_id.to_string()),
+                    _ => None,
+                });
+            hover_surface
+                .update(cx, |surface, cx| {
+                    surface.hover_slack_person(user_id.as_deref(), position, cx);
+                })
+                .ok();
+        })
         .on_link_click(link_ranges.clone(), move |range_index, _window, cx| {
             let Some(link) = links.get(range_index) else {
                 return;
