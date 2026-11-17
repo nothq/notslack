@@ -86,6 +86,7 @@ fn accepted_send_message(
     fallback_text: &str,
 ) -> SlackMessage {
     SlackMessage {
+        is_app: false,
         id: timestamp.to_string(),
         client_message_id: Some(client_message_id.clone()),
         author: "You".to_string(),
@@ -254,6 +255,7 @@ fn uploaded_file_message(
     attachments: Vec<SlackAttachment>,
 ) -> SlackMessage {
     SlackMessage {
+        is_app: false,
         id,
         client_message_id: None,
         author: "You".to_string(),

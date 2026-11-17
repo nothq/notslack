@@ -224,6 +224,7 @@ fn archived_runtime_test_sidebar_item(
 
 fn archived_runtime_test_message() -> SlackMessage {
     SlackMessage {
+        is_app: false,
         id: "message-1".to_string(),
         client_message_id: None,
         author: "Ada Lovelace".to_string(),

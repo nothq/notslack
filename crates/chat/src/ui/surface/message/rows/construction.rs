@@ -85,6 +85,7 @@ pub(crate) fn build_slack_local_delivery_row(
     );
     let avatar_text = slack_local_delivery_avatar_text(avatar_label, author);
     SlackMessageRow {
+        is_app: false,
         id: format!("slack-local-delivery-{}", client_message_id.as_str()),
         author: author.to_string(),
         timestamp: String::new(),
@@ -142,6 +143,7 @@ pub(super) fn slack_message_row(
     SlackMessageRow {
         id: message.id.clone(),
         author: message.author.clone(),
+        is_app: message.is_app,
         timestamp: slack_message_clock_label(message, timezone),
         compact: layout.compact,
         action_target: None,
@@ -286,6 +288,7 @@ pub(super) fn slack_thread_reply_row(
     SlackMessageRow {
         id: message.id.clone(),
         author: message.author.clone(),
+        is_app: message.is_app,
         timestamp: slack_message_clock_label(message, timezone),
         compact: layout.compact,
         action_target: None,

@@ -314,6 +314,8 @@ pub(crate) struct SlackMessageDividerRow {
 pub(crate) struct SlackMessageRow {
     pub(crate) id: String,
     pub(crate) author: String,
+    /// Posted by an app, shown with an "APP" badge.
+    pub(crate) is_app: bool,
     pub(crate) timestamp: String,
     pub(crate) compact: bool,
     pub(crate) action_target: Option<Arc<SlackMessageActionTarget>>,

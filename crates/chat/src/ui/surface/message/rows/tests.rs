@@ -17,6 +17,7 @@ fn slack_reaction_display_falls_back_for_unknown_shortcodes() {
 fn slack_message_chunks_group_simple_histories() {
     let rows = (0..12)
         .map(|index| SlackMessageRow {
+            is_app: false,
             id: format!("M{index}"),
             author: "notslack".to_string(),
             timestamp: "10:00 AM".to_string(),

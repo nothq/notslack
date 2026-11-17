@@ -228,6 +228,7 @@ fn snapshot<const N: usize>(messages: [SlackMessage; N]) -> SlackConversationSna
 
 fn message(id: &str, body: &str) -> SlackMessage {
     SlackMessage {
+        is_app: false,
         id: id.to_string(),
         client_message_id: None,
         author: "You".to_string(),

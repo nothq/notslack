@@ -30,6 +30,7 @@ fn confirmed_sends_survive_an_encrypted_cache_restart() {
 
 fn message(id: &str, body: &str) -> SlackMessage {
     SlackMessage {
+        is_app: false,
         id: id.to_string(),
         client_message_id: None,
         author: "You".to_string(),

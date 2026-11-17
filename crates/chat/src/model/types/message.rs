@@ -40,6 +40,9 @@ pub struct SlackMessage {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_message_id: Option<SlackMessageClientId>,
     pub author: String,
+    /// Posted by an app or bot, which Slack marks with an "APP" badge.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_app: bool,
     pub timestamp: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_id: Option<String>,

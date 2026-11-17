@@ -192,6 +192,7 @@ pub fn slack_test_board() -> SlackWorkspace {
 fn slack_test_message(index: usize, channel_name: &str) -> SlackMessage {
     let is_ada = index.is_multiple_of(2);
     SlackMessage {
+        is_app: false,
         id: format!("1700000000.{:06}", index + 1),
         client_message_id: None,
         author: if is_ada {

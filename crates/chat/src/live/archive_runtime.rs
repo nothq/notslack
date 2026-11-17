@@ -267,6 +267,7 @@ pub(crate) fn append_archived_slack_message(
     attachments: Vec<SlackAttachment>,
 ) -> SlackWorkspace {
     workspace.messages.push(SlackMessage {
+        is_app: false,
         id: format!("archive-sent-{}", workspace.messages.len() + 1),
         client_message_id: None,
         author: "You".to_string(),

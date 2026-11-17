@@ -1,7 +1,7 @@
 use std::{ops::Range, sync::Arc};
 
 use crate::ui::surface::{
-    div, px, relative, rgb, slack_palette, AnyElement, Context, FluentBuilder, FontWeight,
+    alpha, div, px, relative, rgb, slack_palette, AnyElement, Context, FluentBuilder, FontWeight,
     InteractiveElement, IntoElement, KeyDownEvent, ParentElement, SlackMessageRenderContext,
     SlackMessageRow, StatefulInteractiveElement, Styled, SurfaceState, SLACK_LINE_HEIGHT,
 };
@@ -45,6 +45,21 @@ impl SurfaceState {
                     selection_context,
                     cx,
                 ))
+            })
+            .when(row.is_app && !row.author.is_empty(), |this| {
+                // Slack's "APP" badge beside an app's name.
+                this.child(
+                    div()
+                        .flex_none()
+                        .px(px(3.0))
+                        .rounded(px(3.0))
+                        .bg(alpha(palette.main_muted_text, 0.18))
+                        .text_size(px(10.0))
+                        .line_height(px(14.0))
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(rgb(palette.main_muted_text))
+                        .child("APP"),
+                )
             })
             .when(!row.timestamp.is_empty(), |this| {
                 let text: gpui::SharedString = row.timestamp.clone().into();
