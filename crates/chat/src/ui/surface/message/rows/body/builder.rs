@@ -1,7 +1,7 @@
 use crate::ui::surface::{
-    SlackMessageBody, SlackMessageBodyAction, SlackMessageBodyBlock, SlackMessageBodyBlockKind,
-    SlackMessageBodyContextElement, SlackMessageBodyImage, SlackMessageBodyLink,
-    SlackMessageBodyStyleRange, SlackMessageBodyTarget, SlackMessageBodyText,
+    SlackMessageBody, SlackMessageBodyAction, SlackMessageBodyAttachment, SlackMessageBodyBlock,
+    SlackMessageBodyBlockKind, SlackMessageBodyContextElement, SlackMessageBodyImage,
+    SlackMessageBodyLink, SlackMessageBodyStyleRange, SlackMessageBodyTarget, SlackMessageBodyText,
     SlackMessageElementIds, SlackMessageTextStyle,
 };
 
@@ -10,6 +10,8 @@ pub(super) struct SlackMessageBodyBuilder<'a> {
     text: String,
     links: Vec<SlackMessageBodyLink>,
     blocks: Vec<SlackMessageBodyBlock>,
+    attachment: Option<SlackMessageBodyAttachment>,
+    attachment_count: usize,
 }
 
 impl<'a> SlackMessageBodyBuilder<'a> {
@@ -19,15 +21,36 @@ impl<'a> SlackMessageBodyBuilder<'a> {
             text: String::new(),
             links: Vec::new(),
             blocks: Vec::new(),
+            attachment: None,
+            attachment_count: 0,
         }
+    }
+
+    /// Blocks pushed until [`Self::end_attachment`] belong to one attachment.
+    pub(super) fn begin_attachment(&mut self, color: Option<&str>) {
+        self.attachment = Some(SlackMessageBodyAttachment {
+            index: self.attachment_count,
+            color: color.map(|color| color.to_string().into()),
+        });
+        self.attachment_count += 1;
+    }
+
+    pub(super) fn end_attachment(&mut self) {
+        self.attachment = None;
     }
 
     pub(super) fn push_block(&mut self, block: SlackMessageBodyBlockBuilder) {
         if !block.has_content() {
             return;
         }
+        let mut block = block;
+        if self.attachment.is_some() {
+            // Slack underlines the links in an app's attachment.
+            block.underline_links();
+        }
         let block_index = self.blocks.len();
-        let block = block.finish(slack_message_element_ids(self.id_stem, block_index));
+        let mut block = block.finish(slack_message_element_ids(self.id_stem, block_index));
+        block.attachment = self.attachment.clone();
         self.push_aggregate_text(&block.text, &block.links);
         for field in block.fields.iter() {
             self.push_aggregate_text(&field.text, &field.links);
@@ -139,6 +162,22 @@ impl SlackMessageBodyBlockBuilder {
         }
     }
 
+    fn underline_links(&mut self) {
+        underline_link_styles(&mut self.styles);
+        for field in &mut self.fields {
+            let mut styles = field.styles.to_vec();
+            underline_link_styles(&mut styles);
+            field.styles = styles.into();
+        }
+        for element in &mut self.context_elements {
+            if let SlackMessageBodyContextElement::Text(text) = element {
+                let mut styles = text.styles.to_vec();
+                underline_link_styles(&mut styles);
+                text.styles = styles.into();
+            }
+        }
+    }
+
     pub(super) fn push_text(&mut self, text: &str, style: SlackMessageTextStyle) {
         self.push_target(text, style, None);
     }
@@ -241,6 +280,7 @@ impl SlackMessageBodyBlockBuilder {
             context_elements: context_elements.into(),
             actions: actions.into(),
             element_ids,
+            attachment: None,
         }
     }
 }
@@ -271,4 +311,10 @@ pub(super) fn slack_supported_link_url(url: &str) -> bool {
         || url.starts_with("http://")
         || url.starts_with("mailto:")
         || url.starts_with("tel:")
+}
+
+fn underline_link_styles(styles: &mut [SlackMessageBodyStyleRange]) {
+    for range in styles.iter_mut().filter(|range| range.style.link) {
+        range.style.underline = true;
+    }
 }

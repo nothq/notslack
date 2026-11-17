@@ -94,6 +94,7 @@ fn push_slack_block_kit_block(text: &mut String, block: &SlackBlockKitBlock) {
         } => text.push_str(&header.text),
         SlackBlockKitBlock::Section { text: None, .. } | SlackBlockKitBlock::Divider => {}
         SlackBlockKitBlock::Context { elements } => push_slack_block_kit_context(text, elements),
+        SlackBlockKitBlock::Attachment { blocks, .. } => push_slack_block_kit_blocks(text, blocks),
         SlackBlockKitBlock::Actions { elements } => {
             for (index, element) in elements.iter().enumerate() {
                 if index > 0 {
@@ -138,6 +139,14 @@ pub enum SlackBlockKitBlock {
     Actions {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         elements: Vec<SlackBlockKitAction>,
+    },
+    /// A message attachment made of blocks, drawn beside a coloured bar.
+    Attachment {
+        /// The attachment's `color`, such as `#1d9bd1` or `good`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        color: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        blocks: Vec<SlackBlockKitBlock>,
     },
 }
 

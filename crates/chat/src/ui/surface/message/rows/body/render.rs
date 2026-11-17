@@ -153,22 +153,101 @@ fn slack_prepared_message_body_with_selection(
 ) -> Div {
     let palette = slack_palette(text_context.style.appearance_mode);
     let last_block_index = body.blocks.len().checked_sub(1);
+    let mut children = Vec::<AnyElement>::new();
+    // Blocks from one attachment, waiting to be drawn beside its bar.
+    let mut attachment: Option<(usize, Option<SharedString>, Vec<AnyElement>)> = None;
+    for (block_index, block) in body.blocks.iter().enumerate() {
+        let content = slack_prepared_message_block_content(
+            block,
+            edited_label.filter(|_| last_block_index == Some(block_index)),
+            text_context,
+            surface,
+            cx,
+        );
+        let element = slack_prepared_message_block(block, content, palette).into_any_element();
+        let group = block.attachment.as_ref().map(|attachment| attachment.index);
+        if attachment.as_ref().map(|(index, _, _)| *index) != group {
+            if let Some((_, color, blocks)) = attachment.take() {
+                children.push(slack_message_attachment_bar(
+                    color.as_deref(),
+                    blocks,
+                    palette,
+                ));
+            }
+            if let Some(block_attachment) = block.attachment.as_ref() {
+                attachment = Some((
+                    block_attachment.index,
+                    block_attachment.color.clone(),
+                    Vec::new(),
+                ));
+            }
+        }
+        match attachment.as_mut() {
+            Some((_, _, blocks)) => blocks.push(element),
+            None => children.push(element),
+        }
+    }
+    if let Some((_, color, blocks)) = attachment {
+        children.push(slack_message_attachment_bar(
+            color.as_deref(),
+            blocks,
+            palette,
+        ));
+    }
     div()
         .min_w(px(0.0))
         .max_w(px(1230.0))
         .flex()
         .flex_col()
         .gap(px(3.0))
-        .children(body.blocks.iter().enumerate().map(|(block_index, block)| {
-            let content = slack_prepared_message_block_content(
-                block,
-                edited_label.filter(|_| last_block_index == Some(block_index)),
-                text_context,
-                surface,
-                cx,
-            );
-            slack_prepared_message_block(block, content, palette)
-        }))
+        .children(children)
+}
+
+/// An attachment's blocks beside a bar in its colour, as Slack draws them.
+fn slack_message_attachment_bar(
+    color: Option<&str>,
+    blocks: Vec<AnyElement>,
+    palette: SlackPalette,
+) -> AnyElement {
+    div()
+        .min_w(px(0.0))
+        .my(px(4.0))
+        .flex()
+        .child(div().w(px(4.0)).flex_none().rounded(px(8.0)).bg(rgb(
+            slack_attachment_color(color).unwrap_or(palette.attachment_border),
+        )))
+        .child(
+            div()
+                .min_w(px(0.0))
+                .flex_1()
+                .pl(px(12.0))
+                .flex()
+                .flex_col()
+                .gap(px(8.0))
+                .children(blocks),
+        )
+        .into_any_element()
+}
+
+/// Slack's attachment colour: a hex code, or one of its named colours.
+fn slack_attachment_color(color: Option<&str>) -> Option<u32> {
+    match color?.trim() {
+        "good" => Some(0x2eb67d),
+        "warning" => Some(0xecb22e),
+        "danger" => Some(0xe01e5a),
+        hex => {
+            let hex = hex.trim_start_matches('#');
+            match hex.len() {
+                6 => u32::from_str_radix(hex, 16).ok(),
+                3 => {
+                    let short = u32::from_str_radix(hex, 16).ok()?;
+                    let (r, g, b) = ((short >> 8) & 0xf, (short >> 4) & 0xf, short & 0xf);
+                    Some(((r * 17) << 16) | ((g * 17) << 8) | (b * 17))
+                }
+                _ => None,
+            }
+        }
+    }
 }
 
 fn slack_prepared_message_block_content(

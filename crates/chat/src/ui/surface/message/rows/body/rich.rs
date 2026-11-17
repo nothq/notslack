@@ -104,6 +104,13 @@ fn push_slack_block_kit_block(
         SlackBlockKitBlock::Actions { elements } => {
             push_slack_block_kit_actions(prepared, elements)
         }
+        SlackBlockKitBlock::Attachment { color, blocks } => {
+            prepared.begin_attachment(color.as_deref());
+            for block in blocks {
+                push_slack_block_kit_block(prepared, block);
+            }
+            prepared.end_attachment();
+        }
     }
 }
 

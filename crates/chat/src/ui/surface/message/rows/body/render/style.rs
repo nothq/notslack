@@ -155,7 +155,14 @@ fn slack_message_highlight(
         background_color: (style.code && block_kind != SlackMessageBodyBlockKind::Preformatted)
             .then(|| alpha(palette.send_disabled_border, 0.08)),
         underline: style.underline.then(|| UnderlineStyle {
-            color: Some(rgb(palette.main_text).into()),
+            color: Some(
+                rgb(if style.link || style.mention {
+                    palette.link
+                } else {
+                    palette.main_text
+                })
+                .into(),
+            ),
             thickness: px(1.0),
             wavy: false,
         }),

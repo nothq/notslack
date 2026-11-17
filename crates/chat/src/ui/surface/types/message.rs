@@ -125,6 +125,17 @@ pub(crate) struct SlackMessageBodyBlock {
     pub(crate) context_elements: Arc<[SlackMessageBodyContextElement]>,
     pub(crate) actions: Arc<[SlackMessageBodyAction]>,
     pub(crate) element_ids: SlackMessageElementIds,
+    /// The message attachment this block belongs to, if any.
+    pub(crate) attachment: Option<SlackMessageBodyAttachment>,
+}
+
+/// Blocks from one message attachment share a bar in its colour.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct SlackMessageBodyAttachment {
+    /// Which attachment of the message, counting from zero.
+    pub(crate) index: usize,
+    /// The attachment's colour, as Slack sent it.
+    pub(crate) color: Option<SharedString>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
