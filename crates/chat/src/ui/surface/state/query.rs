@@ -8,6 +8,7 @@ impl SurfaceState {
     }
 
     pub(super) fn set_slack_mention_query(&mut self, query: String, cx: &mut Context<Self>) {
+        self.ensure_slack_mention_people(cx);
         self.set_slack_aux_panel(self.slack_mention_panel(&query), cx);
     }
 
