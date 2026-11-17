@@ -1,7 +1,24 @@
 use super::{slack_even_odd_icon, svg_from_body, svg_with_paths, Arc, Image, SlackShellIcon};
 
 pub(super) fn slack_action_icon_image(icon: SlackShellIcon, fill: u32) -> Option<Arc<Image>> {
-    surface_icon_image(icon, fill).or_else(|| interaction_icon_image(icon, fill))
+    surface_icon_image(icon, fill)
+        .or_else(|| interaction_icon_image(icon, fill))
+        .or_else(|| todo_icon_image(icon, fill))
+}
+
+/// Slack's to-do button: a circled check with a plus, and once added, a
+/// filled circle (in `fill`) with a white check.
+fn todo_icon_image(icon: SlackShellIcon, fill: u32) -> Option<Arc<Image>> {
+    let body = match icon {
+        SlackShellIcon::TodoAdd => format!(
+            r##"<g fill="none" stroke="#{fill:06x}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.25 10.75a6.75 6.75 0 1 1-5-6.52"/><path d="M6.75 10.5l2.25 2.25 4-4.5"/><path d="M15.75 2v4.5M13.5 4.25H18"/></g>"##
+        ),
+        SlackShellIcon::TodoDone => format!(
+            r##"<circle cx="10" cy="10" r="8" fill="#{fill:06x}"/><path d="M6.5 10.25l2.5 2.5 4.5-5" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>"##
+        ),
+        _ => return None,
+    };
+    Some(svg_from_body("0 0 20 20", body))
 }
 
 fn surface_icon_image(icon: SlackShellIcon, fill: u32) -> Option<Arc<Image>> {

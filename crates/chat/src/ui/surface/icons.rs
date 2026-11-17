@@ -114,6 +114,8 @@ pub(crate) enum SlackShellIcon {
     Send,
     Close,
     WarningFilled,
+    TodoAdd,
+    TodoDone,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]

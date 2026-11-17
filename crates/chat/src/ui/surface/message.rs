@@ -14,6 +14,7 @@ mod cards;
 mod content;
 mod dividers;
 mod hover_actions;
+pub(crate) use hover_actions::SlackMessageHoverActionsContext;
 mod lightbox;
 mod reaction_bar;
 mod reaction_picker;

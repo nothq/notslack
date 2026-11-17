@@ -60,12 +60,17 @@ impl SurfaceState {
             .flex()
             .items_center()
             .justify_center()
-            .child(slack_icon(
-                SlackShellIcon::Later,
-                palette.main_secondary_text,
-                18.0,
-                cx,
-            ))
+            .tooltip(move |_, cx| super::slack_hover_action_tooltip(label, cx))
+            .child(if saved_state.is_some() {
+                slack_icon(SlackShellIcon::TodoDone, 0x2bac76, 20.0, cx)
+            } else {
+                slack_icon(
+                    SlackShellIcon::TodoAdd,
+                    palette.main_secondary_text,
+                    18.0,
+                    cx,
+                )
+            })
     }
 
     fn slack_message_save_label(&self, row: &SlackMessageRow) -> &'static str {
@@ -80,14 +85,14 @@ impl SurfaceState {
         pending.map_or_else(
             || {
                 if row.saved_state.is_some() {
-                    "Remove from later"
+                    "Clear to-do"
                 } else {
-                    "Save for later"
+                    "Add to-do"
                 }
             },
             |request| match request.mutation {
-                SlackSavedMessageMutation::Save => "Saving for later…",
-                SlackSavedMessageMutation::Remove => "Removing from later…",
+                SlackSavedMessageMutation::Save => "Adding to-do…",
+                SlackSavedMessageMutation::Remove => "Clearing to-do…",
             },
         )
     }

@@ -63,6 +63,7 @@ impl SurfaceState {
             ))
             .role(Role::Button)
             .aria_label(slack_add_reaction_action_label(pending))
+            .tooltip(|_, cx| super::slack_hover_action_tooltip("Add reaction", cx))
             .focusable()
             .tab_stop(true)
             .relative()

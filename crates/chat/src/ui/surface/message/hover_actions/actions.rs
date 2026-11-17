@@ -14,7 +14,7 @@ mod save;
 use reaction::SlackAddReactionActionContext;
 
 impl SurfaceState {
-    pub(in crate::ui::surface::message) fn render_slack_message_hover_actions(
+    pub(crate) fn render_slack_message_hover_actions(
         &self,
         row: &SlackMessageRow,
         hover_group: String,
@@ -130,6 +130,7 @@ impl SurfaceState {
             .id(format!("slack-message-reply-{}", row.id))
             .role(Role::Button)
             .aria_label("Reply in thread")
+            .tooltip(|_, cx| slack_hover_action_tooltip("Reply to thread", cx))
             .focusable()
             .tab_stop(true)
             .relative()
@@ -186,6 +187,7 @@ impl SurfaceState {
             .id(format!("slack-message-forward-{}", row.id))
             .role(Role::Button)
             .aria_label("Forward message…")
+            .tooltip(|_, cx| slack_hover_action_tooltip("Forward message…", cx))
             .focusable()
             .tab_stop(true)
             .relative()
@@ -239,6 +241,7 @@ impl SurfaceState {
             .id(format!("slack-message-more-{}", row.id))
             .role(Role::Button)
             .aria_label("More actions")
+            .tooltip(|_, cx| slack_hover_action_tooltip("More actions", cx))
             .focusable()
             .tab_stop(true)
             .relative()
@@ -309,4 +312,33 @@ fn slack_message_actions_background(background: u32, persistent: bool, hover_gro
         ])
         .opacity(if persistent { 1.0 } else { 0.0 })
         .group_hover(hover_group.to_string(), |style| style.opacity(1.0))
+}
+
+/// The dark label over a message's hover button, like Slack's.
+struct SlackHoverActionTooltip {
+    label: gpui::SharedString,
+}
+
+impl gpui::Render for SlackHoverActionTooltip {
+    fn render(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .px(px(10.0))
+            .py(px(6.0))
+            .rounded(px(6.0))
+            .bg(rgb(0x1d1c1d))
+            .border_1()
+            .border_color(alpha(0xffffff, 0.12))
+            .text_size(px(13.0))
+            .font_weight(gpui::FontWeight::BOLD)
+            .text_color(rgb(0xffffff))
+            .child(self.label.clone())
+    }
+}
+
+pub(super) fn slack_hover_action_tooltip(
+    label: impl Into<gpui::SharedString>,
+    cx: &mut gpui::App,
+) -> gpui::AnyView {
+    let label = label.into();
+    gpui::AppContext::new(cx, |_| SlackHoverActionTooltip { label }).into()
 }

@@ -3,7 +3,7 @@ use crate::ui::surface::{SlackMessageRenderContext, SlackMessageRow, SurfaceStat
 mod actions;
 
 #[derive(Clone, Copy)]
-pub(super) struct SlackMessageHoverActionsContext {
+pub(crate) struct SlackMessageHoverActionsContext {
     render_context: SlackMessageRenderContext,
     reaction_supported: bool,
     reply_supported: bool,
@@ -13,7 +13,7 @@ pub(super) struct SlackMessageHoverActionsContext {
 }
 
 impl SlackMessageHoverActionsContext {
-    pub(super) fn for_message(
+    pub(crate) fn for_message(
         surface: &SurfaceState,
         row: &SlackMessageRow,
         render_context: SlackMessageRenderContext,
@@ -66,7 +66,7 @@ impl SlackMessageHoverActionsContext {
         }
     }
 
-    pub(super) fn any_supported(self) -> bool {
+    pub(crate) fn any_supported(self) -> bool {
         self.reaction_supported
             || self.reply_supported
             || self.forward_supported
