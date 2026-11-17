@@ -70,6 +70,7 @@ impl SurfaceState {
             cx,
         );
         self.sync_slack_members_context(cx);
+        self.sync_slack_app_dm_context(cx);
         self.activate_current_slack_conversation_history_tab(cx);
         self.emit_slack_dock_badge(cx);
         true

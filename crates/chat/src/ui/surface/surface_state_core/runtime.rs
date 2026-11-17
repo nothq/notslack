@@ -147,6 +147,7 @@ impl SurfaceState {
             composer_notice: None,
             peer_notifications_paused: false,
             dm_peer_local_time_context: None,
+            dm_app: None,
             composer_draft_text: None,
             composer_placeholder: "Message #general".to_string(),
         }

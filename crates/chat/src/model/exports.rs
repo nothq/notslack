@@ -5,6 +5,9 @@ pub use super::activity::{
     SlackActivityReadTarget, SlackActivitySnapshot, SlackActivityThreadV2,
 };
 pub use super::all_threads::{SlackAllThread, SlackAllThreadsCursor, SlackAllThreadsSnapshot};
+pub use super::app_dm::{
+    SlackAppDmDetails, SlackAppHome, SlackAppHomeView, SlackAppProfile, SlackDmApp,
+};
 pub use super::attachments::{
     SlackAttachment, SlackAttachmentMedia, SlackAttachmentMediaKind, SlackAttachmentPreviewSize,
     SlackAttachmentSource, SlackLegacyAttachmentFile, SlackLegacyAttachmentMetadata,

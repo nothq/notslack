@@ -26,8 +26,8 @@ pub(super) use history::{
     slack_thread_messages, SlackConversationHistoryPagePayloads,
 };
 pub(crate) use rich_text::slack_message_body;
-pub(in crate::live) use rich_text::slack_rich_text_body_from_blocks;
 use rich_text::{slack_message_reactions, slack_rich_text_body};
+pub(in crate::live) use rich_text::{slack_rich_text_body_from_blocks, slack_view_rich_text_body};
 pub(super) use send_receipt::{
     slack_message_send_receipt_from_payload, SlackMessageSendReceiptPayloads,
 };

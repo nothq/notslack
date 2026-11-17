@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use crate::ui::surface::{
-    PreparedSlackConversationTab, SlackConversationTabAction, SlackConversationTabCapabilities,
-    SlackShellIcon, SurfaceState, SLACK_CONVERSATION_TAB_MESSAGES_KEY,
-    SLACK_CONVERSATION_TAB_MORE_KEY,
+    PreparedSlackConversationTab, SlackAppDmTabSet, SlackConversationTabAction,
+    SlackConversationTabCapabilities, SlackShellIcon, SurfaceState,
+    SLACK_CONVERSATION_TAB_APP_ABOUT_KEY, SLACK_CONVERSATION_TAB_APP_HOME_KEY,
+    SLACK_CONVERSATION_TAB_MESSAGES_KEY, SLACK_CONVERSATION_TAB_MORE_KEY,
 };
 use crate::ui::{px, Context, FontWeight, Window};
 use crate::ui::{SlackConversationTab, SlackConversationTabTarget};
@@ -39,12 +40,14 @@ impl SurfaceState {
             .map_or(&[][..], |workspace| workspace.tabs.as_slice());
         let capabilities =
             SlackConversationTabCapabilities::from(self.slack_workspace_api_capabilities);
+        let app_tabs = self.slack_app_dm_tab_set();
         let mut font = window.text_style().font();
         font.weight = FontWeight::BOLD;
         let scale_factor_bits = window.scale_factor().to_bits();
-        let source_changed = !self
-            .slack_conversation_tabs_cache
-            .source_matches(source_tabs, capabilities);
+        let source_changed =
+            !self
+                .slack_conversation_tabs_cache
+                .source_matches(source_tabs, capabilities, app_tabs);
         let font_changed = self.slack_conversation_tabs_cache.font.as_ref() != Some(&font)
             || self.slack_conversation_tabs_cache.scale_factor_bits != scale_factor_bits;
         let bounds_changed = self.slack_conversation_tabs_cache.bounds != Some(bounds);
@@ -57,8 +60,13 @@ impl SurfaceState {
             .is_none_or(|previous| previous.size.width != bounds.size.width);
 
         if source_changed || font_changed {
-            self.slack_conversation_tabs_cache.tabs =
-                Self::prepare_slack_conversation_tabs(source_tabs, capabilities, &font, window);
+            self.slack_conversation_tabs_cache.tabs = Self::prepare_slack_conversation_tabs(
+                source_tabs,
+                capabilities,
+                app_tabs,
+                &font,
+                window,
+            );
             self.slack_conversation_tabs_cache.more_width =
                 Self::measure_slack_conversation_tab_label("More", &font, window)
                     + SLACK_CONVERSATION_TABS_MORE_EXTRA_WIDTH;
@@ -67,6 +75,7 @@ impl SurfaceState {
             if source_changed {
                 self.slack_conversation_tabs_cache.source_tabs = source_tabs.to_vec().into();
                 self.slack_conversation_tabs_cache.capabilities = capabilities;
+                self.slack_conversation_tabs_cache.app_tabs = app_tabs;
                 self.slack_conversation_tabs_overflow_open = false;
                 self.slack_conversation_tabs_overflow_selected_index = None;
                 self.slack_conversation_tabs_overflow_focus_pending = false;
@@ -96,61 +105,14 @@ impl SurfaceState {
     fn prepare_slack_conversation_tabs(
         source_tabs: &[SlackConversationTab],
         capabilities: SlackConversationTabCapabilities,
+        app_tabs: Option<SlackAppDmTabSet>,
         font: &gpui::Font,
         window: &mut Window,
     ) -> Arc<[PreparedSlackConversationTab]> {
-        let mut tabs = Vec::with_capacity(source_tabs.len() + 2);
-        tabs.push(Self::prepare_slack_conversation_tab(
-            SlackConversationTabPreparation {
-                key: SLACK_CONVERSATION_TAB_MESSAGES_KEY.into(),
-                element_id: "slack-conversation-tab-messages".into(),
-                label: "Messages".into(),
-                icon: SlackShellIcon::MessageFilled,
-                action: SlackConversationTabAction::Messages,
-                enabled: true,
-            },
-            font,
-            window,
-        ));
-        if !slack_conversation_tabs_include_canvas(source_tabs) {
-            tabs.push(Self::prepare_slack_conversation_tab(
-                SlackConversationTabPreparation {
-                    key: "add-canvas".into(),
-                    element_id: "slack-conversation-tab-add-canvas".into(),
-                    label: "Add canvas".into(),
-                    icon: SlackShellIcon::Canvas,
-                    action: SlackConversationTabAction::AddCanvas,
-                    enabled: false,
-                },
-                font,
-                window,
-            ));
-        }
-        for tab in source_tabs {
-            if tab.is_disabled
-                || tab.id.is_empty()
-                || tab.label.trim().is_empty()
-                || !capabilities.supports(&tab.target)
-            {
-                continue;
-            }
-            let Some((icon, action)) = slack_conversation_tab_presentation(tab) else {
-                continue;
-            };
-            tabs.push(Self::prepare_slack_conversation_tab(
-                SlackConversationTabPreparation {
-                    key: format!("source:{}", tab.id).into(),
-                    element_id: format!("slack-conversation-tab-{}", tab.id).into(),
-                    label: tab.label.clone().into(),
-                    icon,
-                    action,
-                    enabled: true,
-                },
-                font,
-                window,
-            ));
-        }
-        tabs.into()
+        slack_conversation_tab_preparations(source_tabs, capabilities, app_tabs)
+            .into_iter()
+            .map(|preparation| Self::prepare_slack_conversation_tab(preparation, font, window))
+            .collect()
     }
 
     fn prepare_slack_conversation_tab(
@@ -279,6 +241,72 @@ impl SurfaceState {
     }
 }
 
+fn slack_conversation_tab_preparations(
+    source_tabs: &[SlackConversationTab],
+    capabilities: SlackConversationTabCapabilities,
+    app_tabs: Option<SlackAppDmTabSet>,
+) -> Vec<SlackConversationTabPreparation> {
+    let mut tabs = Vec::with_capacity(source_tabs.len() + 3);
+    if app_tabs.is_some_and(|app_tabs| app_tabs.home) {
+        tabs.push(SlackConversationTabPreparation {
+            key: SLACK_CONVERSATION_TAB_APP_HOME_KEY.into(),
+            element_id: "slack-conversation-tab-app-home".into(),
+            label: "Home".into(),
+            icon: SlackShellIcon::Home,
+            action: SlackConversationTabAction::AppHome,
+            enabled: true,
+        });
+    }
+    tabs.push(SlackConversationTabPreparation {
+        key: SLACK_CONVERSATION_TAB_MESSAGES_KEY.into(),
+        element_id: "slack-conversation-tab-messages".into(),
+        label: "Messages".into(),
+        icon: SlackShellIcon::MessageFilled,
+        action: SlackConversationTabAction::Messages,
+        enabled: true,
+    });
+    if app_tabs.is_some() {
+        tabs.push(SlackConversationTabPreparation {
+            key: SLACK_CONVERSATION_TAB_APP_ABOUT_KEY.into(),
+            element_id: "slack-conversation-tab-app-about".into(),
+            label: "About".into(),
+            icon: SlackShellIcon::Info,
+            action: SlackConversationTabAction::AppAbout,
+            enabled: true,
+        });
+    } else if !slack_conversation_tabs_include_canvas(source_tabs) {
+        tabs.push(SlackConversationTabPreparation {
+            key: "add-canvas".into(),
+            element_id: "slack-conversation-tab-add-canvas".into(),
+            label: "Add canvas".into(),
+            icon: SlackShellIcon::Canvas,
+            action: SlackConversationTabAction::AddCanvas,
+            enabled: false,
+        });
+    }
+    for tab in source_tabs {
+        if tab.is_disabled
+            || tab.id.is_empty()
+            || tab.label.trim().is_empty()
+            || !capabilities.supports(&tab.target)
+        {
+            continue;
+        }
+        let Some((icon, action)) = slack_conversation_tab_presentation(tab) else {
+            continue;
+        };
+        tabs.push(SlackConversationTabPreparation {
+            key: format!("source:{}", tab.id).into(),
+            element_id: format!("slack-conversation-tab-{}", tab.id).into(),
+            label: tab.label.clone().into(),
+            icon,
+            action,
+            enabled: true,
+        });
+    }
+    tabs
+}
+
 fn slack_conversation_tabs_include_canvas(tabs: &[SlackConversationTab]) -> bool {
     tabs.iter().any(|tab| {
         !tab.is_disabled && matches!(&tab.target, SlackConversationTabTarget::Canvas { .. })
@@ -312,5 +340,88 @@ fn slack_conversation_tab_presentation(
         SlackConversationTabTarget::Canvas { .. }
         | SlackConversationTabTarget::Folder { .. }
         | SlackConversationTabTarget::Unsupported { .. } => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tab_summary(
+        source_tabs: &[SlackConversationTab],
+        app_tabs: Option<SlackAppDmTabSet>,
+    ) -> Vec<(String, String, SlackConversationTabAction, bool)> {
+        slack_conversation_tab_preparations(
+            source_tabs,
+            SlackConversationTabCapabilities::default(),
+            app_tabs,
+        )
+        .into_iter()
+        .map(|tab| {
+            (
+                tab.key.to_string(),
+                tab.label.to_string(),
+                tab.action,
+                tab.enabled,
+            )
+        })
+        .collect()
+    }
+
+    #[test]
+    fn regular_conversations_keep_messages_and_add_canvas() {
+        assert_eq!(
+            tab_summary(&[], None),
+            vec![
+                (
+                    "messages".to_string(),
+                    "Messages".to_string(),
+                    SlackConversationTabAction::Messages,
+                    true,
+                ),
+                (
+                    "add-canvas".to_string(),
+                    "Add canvas".to_string(),
+                    SlackConversationTabAction::AddCanvas,
+                    false,
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn app_dm_with_home_tab_shows_home_messages_about() {
+        assert_eq!(
+            tab_summary(&[], Some(SlackAppDmTabSet { home: true })),
+            vec![
+                (
+                    "app-home".to_string(),
+                    "Home".to_string(),
+                    SlackConversationTabAction::AppHome,
+                    true,
+                ),
+                (
+                    "messages".to_string(),
+                    "Messages".to_string(),
+                    SlackConversationTabAction::Messages,
+                    true,
+                ),
+                (
+                    "app-about".to_string(),
+                    "About".to_string(),
+                    SlackConversationTabAction::AppAbout,
+                    true,
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn app_dm_without_home_tab_shows_messages_about() {
+        let keys = tab_summary(&[], Some(SlackAppDmTabSet { home: false }))
+            .into_iter()
+            .map(|(key, ..)| key)
+            .collect::<Vec<_>>();
+        assert_eq!(keys, vec!["messages".to_string(), "app-about".to_string()]);
     }
 }

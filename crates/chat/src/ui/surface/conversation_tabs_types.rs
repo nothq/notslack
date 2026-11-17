@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use gpui::{Bounds, Font, Pixels, SharedString};
 
-use super::SlackShellIcon;
+use super::{SlackAppDmTabSet, SlackShellIcon};
 use crate::ui::{SlackConversationTab, SlackConversationTabTarget, SlackWorkspaceApiCapabilities};
 
 pub(crate) const SLACK_CONVERSATION_TAB_MESSAGES_KEY: &str = "messages";
 pub(crate) const SLACK_CONVERSATION_TAB_MORE_KEY: &str = "more";
+pub(crate) const SLACK_CONVERSATION_TAB_APP_HOME_KEY: &str = "app-home";
+pub(crate) const SLACK_CONVERSATION_TAB_APP_ABOUT_KEY: &str = "app-about";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct SlackConversationTabCapabilities {
@@ -40,6 +42,8 @@ impl SlackConversationTabCapabilities {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum SlackConversationTabAction {
     Messages,
+    AppHome,
+    AppAbout,
     AddCanvas,
     CanvasLink {
         tab: SlackConversationTab,
@@ -66,6 +70,7 @@ pub(crate) struct PreparedSlackConversationTab {
 pub(crate) struct SlackConversationTabsCache {
     pub(crate) source_tabs: Arc<[SlackConversationTab]>,
     pub(crate) capabilities: SlackConversationTabCapabilities,
+    pub(crate) app_tabs: Option<SlackAppDmTabSet>,
     pub(crate) font: Option<Font>,
     pub(crate) scale_factor_bits: u32,
     pub(crate) bounds: Option<Bounds<Pixels>>,
@@ -79,6 +84,7 @@ impl Default for SlackConversationTabsCache {
         Self {
             source_tabs: Arc::default(),
             capabilities: SlackConversationTabCapabilities::default(),
+            app_tabs: None,
             font: None,
             scale_factor_bits: 0,
             bounds: None,
@@ -94,8 +100,11 @@ impl SlackConversationTabsCache {
         &self,
         source_tabs: &[SlackConversationTab],
         capabilities: SlackConversationTabCapabilities,
+        app_tabs: Option<SlackAppDmTabSet>,
     ) -> bool {
-        self.source_tabs.as_ref() == source_tabs && self.capabilities == capabilities
+        self.source_tabs.as_ref() == source_tabs
+            && self.capabilities == capabilities
+            && self.app_tabs == app_tabs
     }
 
     pub(crate) fn has_overflow(&self) -> bool {

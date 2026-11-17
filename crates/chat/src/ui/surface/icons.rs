@@ -26,6 +26,7 @@ pub(crate) enum SlackShellIcon {
     ArrowUp,
     ArrowDown,
     Home,
+    Info,
     Dm,
     Huddles,
     Activity,

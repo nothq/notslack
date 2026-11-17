@@ -197,6 +197,7 @@ impl SurfaceState {
         state.initialize_slack_inline_mention_observers(cx);
         state.register_slack_list_scroll_handlers(cx);
         state.sync_slack_members_context(cx);
+        state.sync_slack_app_dm_context(cx);
         state.sync_slack_channel_notification_preference(cx);
         state.sync_slack_preferred_skin_tone(cx);
         state.sync_slack_remote_draft_hydration(cx);

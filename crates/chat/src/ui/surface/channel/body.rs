@@ -31,7 +31,10 @@ impl SurfaceState {
     ) -> AnyElement {
         match self.slack_active_rail_view {
             SlackRailView::Home | SlackRailView::Dms => match self.slack_active_tab {
-                SlackMainTab::Messages => self.render_slack_messages_panel(workspace, view, cx),
+                SlackMainTab::Messages => match self.slack_app_dm_panel_tab() {
+                    Some(tab) => self.render_slack_app_dm_panel(workspace, tab, cx),
+                    None => self.render_slack_messages_panel(workspace, view, cx),
+                },
                 SlackMainTab::Canvas => self.render_slack_messages_panel(workspace, view, cx),
                 SlackMainTab::BookmarkFolder => self.render_slack_bookmark_folder_panel(cx),
                 SlackMainTab::Pins => self.render_slack_pins_panel(cx),

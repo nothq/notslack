@@ -63,6 +63,7 @@ fn workspace_with_sidebar_item(unread: bool, count: Option<u32>) -> SlackWorkspa
         composer_notice: None,
         peer_notifications_paused: false,
         dm_peer_local_time_context: None,
+        dm_app: None,
         composer_draft_text: None,
         composer_placeholder: "Message Grace".to_string(),
     }

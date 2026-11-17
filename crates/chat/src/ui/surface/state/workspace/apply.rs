@@ -134,6 +134,7 @@ impl SurfaceState {
         );
         self.reconcile_slack_current_conversation_outbound_deliveries(cx);
         self.sync_slack_members_context(cx);
+        self.sync_slack_app_dm_context(cx);
         self.reactivate_slack_workspace_view(activation.view_reactivation, cx);
         self.activate_current_slack_conversation_history_tab(cx);
         self.emit_slack_dock_badge(cx);

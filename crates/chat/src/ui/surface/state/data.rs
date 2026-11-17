@@ -351,6 +351,7 @@ pub struct SurfaceStateData {
     pub(crate) slack_channel_menu_selected_index: Option<usize>,
     pub(crate) slack_channel_menu_submenu: Option<SlackChannelMenuSubmenu>,
     pub(crate) slack_channel_submenu_selected_index: Option<usize>,
+    pub(crate) slack_app_dm: crate::ui::surface::SlackAppDmState,
     pub(crate) slack_channel_details_open: bool,
     pub(crate) slack_channel_details_cache: HashMap<(String, String), PreparedSlackChannelDetails>,
     pub(crate) slack_channel_details: Option<PreparedSlackChannelDetails>,

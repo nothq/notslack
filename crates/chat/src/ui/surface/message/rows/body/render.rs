@@ -125,6 +125,30 @@ fn with_slack_message_link_clicks(
         .into_any_element()
 }
 
+impl SurfaceState {
+    /// Renders a prepared Block Kit / rich text body outside of a message
+    /// row, e.g. a published App Home view.
+    pub(in crate::ui::surface) fn render_slack_standalone_message_body(
+        &self,
+        body: &SlackMessageBody,
+        cx: &mut Context<SurfaceState>,
+    ) -> Div {
+        let palette = slack_palette(self.appearance_mode);
+        slack_prepared_message_body(
+            self,
+            body,
+            None,
+            SlackPreparedMessageBodyStyle::new(
+                self.appearance_mode,
+                SlackMessageRenderContext::Conversation,
+                palette.main_text,
+                FontWeight::NORMAL,
+            ),
+            cx,
+        )
+    }
+}
+
 pub(in crate::ui::surface::message) fn slack_prepared_message_body(
     surface: &SurfaceState,
     body: &SlackMessageBody,

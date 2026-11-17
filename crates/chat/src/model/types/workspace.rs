@@ -74,6 +74,7 @@ impl SlackWorkspace {
             composer_notice: self.composer_notice.clone(),
             peer_notifications_paused: self.peer_notifications_paused,
             dm_peer_local_time_context: self.dm_peer_local_time_context.clone(),
+            dm_app: self.dm_app.clone(),
             composer_draft_text: self.composer_draft_text.clone(),
             composer_placeholder: self.composer_placeholder.clone(),
         }
@@ -155,6 +156,7 @@ impl SlackWorkspace {
         self.composer_notice = conversation.composer_notice;
         self.peer_notifications_paused = conversation.peer_notifications_paused;
         self.dm_peer_local_time_context = conversation.dm_peer_local_time_context;
+        self.dm_app = conversation.dm_app;
         self.composer_draft_text = conversation.composer_draft_text;
         self.composer_placeholder = conversation.composer_placeholder;
     }
@@ -251,6 +253,7 @@ fn workspace_from_snapshots(
         composer_notice: conversation.composer_notice,
         peer_notifications_paused: conversation.peer_notifications_paused,
         dm_peer_local_time_context: conversation.dm_peer_local_time_context,
+        dm_app: conversation.dm_app,
         composer_draft_text: conversation.composer_draft_text,
         composer_placeholder: conversation.composer_placeholder,
     }

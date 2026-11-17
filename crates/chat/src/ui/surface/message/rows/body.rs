@@ -78,6 +78,13 @@ pub(crate) fn prepare_slack_message_body(body: &str) -> SlackMessageBody {
     legacy::prepare_slack_legacy_message_body(body, &legacy::slack_legacy_body_id_stem(body))
 }
 
+pub(crate) fn prepare_slack_rich_body(
+    body: &crate::ui::SlackRichTextBody,
+    id_stem: &str,
+) -> SlackMessageBody {
+    rich::prepare_slack_rich_message_body(body, id_stem)
+}
+
 pub(crate) fn prepare_slack_message_body_from_message(message: &SlackMessage) -> SlackMessageBody {
     let id_stem = format!("slack-message-body-{}", message.id);
     if let Some(rich_body) = message.rich_body.as_deref() {

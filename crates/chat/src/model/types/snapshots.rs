@@ -73,6 +73,8 @@ pub struct SlackWorkspace {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dm_peer_local_time_context: Option<SlackDmPeerLocalTimeContext>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dm_app: Option<crate::model::SlackDmApp>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub composer_draft_text: Option<String>,
     pub composer_placeholder: String,
 }
@@ -232,6 +234,8 @@ pub struct SlackConversationSnapshot {
     pub peer_notifications_paused: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dm_peer_local_time_context: Option<SlackDmPeerLocalTimeContext>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dm_app: Option<crate::model::SlackDmApp>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub composer_draft_text: Option<String>,
     pub composer_placeholder: String,

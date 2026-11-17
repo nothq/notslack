@@ -29,6 +29,7 @@ use super::{
 
 mod activity;
 mod all_threads;
+mod app_dm;
 mod audio_clip;
 mod aux_actions;
 mod bookmark_folder;

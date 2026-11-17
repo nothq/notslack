@@ -34,7 +34,7 @@ pub(crate) use rows::{
     build_slack_message_chunks, build_slack_message_rows_with_local_today,
     build_slack_pinned_message_row, build_slack_thread_page_reply_rows_in_timezone,
     build_slack_thread_parent_row, build_slack_thread_parent_row_in_timezone,
-    prepare_slack_message_body, prepare_slack_message_body_from_message,
+    prepare_slack_message_body, prepare_slack_message_body_from_message, prepare_slack_rich_body,
     slack_all_threads_timestamp_label, slack_attachment_row_with_identity, slack_local_today,
     slack_message_timezone, slack_reaction_rows, SlackAppendedMessageRowInput,
     SlackLocalDeliveryRowInput,

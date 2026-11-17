@@ -99,6 +99,7 @@ pub fn slack_test_workspace_with_sections(
         composer_notice: None,
         peer_notifications_paused: false,
         dm_peer_local_time_context: None,
+        dm_app: None,
         composer_draft_text: None,
         composer_placeholder: format!("Message to {channel_name}"),
     }
@@ -153,6 +154,7 @@ pub fn slack_test_workspace_with_channel_count(channel_count: usize) -> SlackWor
         composer_notice: None,
         peer_notifications_paused: false,
         dm_peer_local_time_context: None,
+        dm_app: None,
         composer_draft_text: None,
         composer_placeholder: "Message to design".to_string(),
     }

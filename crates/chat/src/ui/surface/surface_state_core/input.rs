@@ -46,6 +46,7 @@ impl SurfaceState {
             }
         }
         self.sync_slack_members_context(cx);
+        self.sync_slack_app_dm_context(cx);
         self.sync_slack_channel_notification_preference(cx);
         self.sync_slack_preferred_skin_tone(cx);
         self.sync_slack_remote_draft_hydration(cx);

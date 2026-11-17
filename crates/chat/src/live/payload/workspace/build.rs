@@ -170,6 +170,7 @@ pub(super) fn slack_conversation_from_payloads(
     let last_read = slack_last_read_timestamp(&channel, payloads.conversation_id)?;
     let dm_peer_local_time_context =
         slack_dm_peer_local_time_context(&payloads, &channel, channel_kind, &channel_name)?;
+    let dm_app = slack_dm_app(&payloads, &channel, channel_kind, &channel_name);
     Ok(SlackConversationSnapshot {
         team_id: payloads.team_id.to_string(),
         conversation_id: payloads.conversation_id.to_string(),
@@ -196,6 +197,7 @@ pub(super) fn slack_conversation_from_payloads(
             .then(|| format!("{channel_name} has paused their notifications")),
         peer_notifications_paused: payloads.peer_notifications_paused,
         dm_peer_local_time_context,
+        dm_app,
         composer_draft_text: None,
         composer_placeholder: channel_kind.composer_placeholder(&channel_name),
     })
@@ -253,6 +255,61 @@ fn slack_dm_peer_local_time_context(
         conversation_label: channel_name.to_string(),
         timezone: peer_timezone,
     }))
+}
+
+/// Identifies the app behind a DM whose peer is a bot or app user, so the
+/// conversation header can offer the app's Home and About tabs.
+fn slack_dm_app(
+    payloads: &SlackConversationPayloads<'_>,
+    channel: &Value,
+    channel_kind: SlackConversationKind,
+    channel_name: &str,
+) -> Option<crate::model::SlackDmApp> {
+    if channel_kind != SlackConversationKind::DirectMessage {
+        return None;
+    }
+    let peer_user_id = channel.get("user").and_then(Value::as_str)?;
+    if payloads.self_user_id == Some(peer_user_id) || SLACKBOT_USER_IDS.contains(&peer_user_id) {
+        return None;
+    }
+    let peer_user = payloads.users.get(peer_user_id)?;
+    slack_dm_app_from_user(peer_user_id, peer_user, channel_name)
+}
+
+pub(super) fn slack_dm_app_from_user(
+    peer_user_id: &str,
+    peer_user: &Value,
+    channel_name: &str,
+) -> Option<crate::model::SlackDmApp> {
+    let profile_string = |field: &str| {
+        peer_user
+            .get("profile")
+            .and_then(|profile| profile.get(field))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    };
+    let bot_id = profile_string("bot_id");
+    let app_id = profile_string("api_app_id");
+    if !slack_user_flag(peer_user, "is_bot")
+        && !slack_user_flag(peer_user, "is_app_user")
+        && bot_id.is_none()
+    {
+        return None;
+    }
+    let name = Some(channel_name.trim())
+        .filter(|name| !name.is_empty() && *name != peer_user_id)
+        .map(str::to_string)
+        .or_else(|| slack_user_display_name(peer_user))
+        .unwrap_or_else(|| peer_user_id.to_string());
+    Some(crate::model::SlackDmApp {
+        user_id: peer_user_id.to_string(),
+        app_id,
+        bot_id,
+        name,
+        avatar_image_url: slack_user_avatar_image_url(peer_user, SlackAvatarPurpose::Profile),
+    })
 }
 
 fn slack_user_iana_timezone(

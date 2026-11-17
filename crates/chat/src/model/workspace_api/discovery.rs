@@ -142,6 +142,20 @@ macro_rules! slack_workspace_discovery_api {
         ) -> Result<crate::model::SlackChannelDetailsSnapshot, String> {
             Err("Slack channel details are unavailable for this workspace runtime".to_string())
         }
+        fn load_slack_app_dm_details(
+            &self,
+            _conversation_id: &str,
+            _app_id: Option<&str>,
+            _bot_id: Option<&str>,
+        ) -> Result<crate::model::SlackAppDmDetails, String> {
+            Err("Slack app details are unavailable for this workspace runtime".to_string())
+        }
+        fn load_slack_app_home_view(
+            &self,
+            _view_id: &str,
+        ) -> Result<crate::model::SlackAppHomeView, String> {
+            Err("Slack App Home views are unavailable for this workspace runtime".to_string())
+        }
         fn load_slack_channel_notification_preference(
             &self,
             _conversation_id: &str,

@@ -10,7 +10,9 @@ mod timeline;
 pub(crate) use self::attachments::slack_attachment_row;
 pub(crate) use self::attachments::slack_attachment_row_with_identity;
 pub(in crate::ui::surface) use self::body::slack_message_body_block;
-pub(crate) use self::body::{prepare_slack_message_body, prepare_slack_message_body_from_message};
+pub(crate) use self::body::{
+    prepare_slack_message_body, prepare_slack_message_body_from_message, prepare_slack_rich_body,
+};
 pub(in crate::ui::surface) use self::body::{
     slack_message_body_block_in_document, SlackMessageSelectionContext,
 };

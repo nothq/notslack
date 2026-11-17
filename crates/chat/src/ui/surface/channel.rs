@@ -15,6 +15,7 @@ use super::{
 use crate::ui::{SlackConversationKind, SlackWorkspace};
 use gpui::Role;
 
+mod app_dm;
 mod body;
 mod bookmark_folder;
 mod composer;
@@ -54,6 +55,7 @@ impl SurfaceState {
             .when_some(
                 (self.slack_main_shows_channel_chrome()
                     && self.slack_active_tab == SlackMainTab::Messages
+                    && self.slack_app_dm_panel_tab().is_none()
                     && self.has_current_slack_send_target())
                 .then_some(composer_presentation)
                 .flatten(),

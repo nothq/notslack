@@ -1,6 +1,7 @@
 use crate::ui::surface::{
-    slack_icon, slack_palette, PreparedSlackConversationTab, SlackConversationTabAction,
-    SlackMainTab, SlackRailView, SlackShellIcon, SurfaceState, SLACK_CONVERSATION_TAB_MORE_KEY,
+    slack_icon, slack_palette, PreparedSlackConversationTab, SlackAppDmTab,
+    SlackConversationTabAction, SlackMainTab, SlackRailView, SlackShellIcon, SurfaceState,
+    SLACK_CONVERSATION_TAB_MORE_KEY,
 };
 use crate::ui::{
     div, px, rgb, Context, Div, FluentBuilder, FocusHandle, FontWeight, InteractiveElement,
@@ -143,6 +144,13 @@ impl SurfaceState {
                         self.slack_active_rail_view,
                         SlackRailView::Home | SlackRailView::Dms
                     )
+                    && self.slack_app_dm_panel_tab().is_none()
+            }
+            SlackConversationTabAction::AppHome => {
+                self.slack_app_dm_panel_tab() == Some(SlackAppDmTab::Home)
+            }
+            SlackConversationTabAction::AppAbout => {
+                self.slack_app_dm_panel_tab() == Some(SlackAppDmTab::About)
             }
             SlackConversationTabAction::AddCanvas => false,
             SlackConversationTabAction::CanvasLink { .. } => false,

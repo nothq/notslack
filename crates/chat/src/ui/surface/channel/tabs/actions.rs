@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::ui::surface::{SlackConversationTabAction, SlackMainTab, SurfaceState};
+use crate::ui::surface::{SlackAppDmTab, SlackConversationTabAction, SlackMainTab, SurfaceState};
 use crate::ui::{Context, SlackConversationTab, SlackConversationTabTarget};
 
 impl SurfaceState {
@@ -13,6 +13,12 @@ impl SurfaceState {
         match action.as_ref() {
             SlackConversationTabAction::Messages => {
                 self.select_slack_tab(SlackMainTab::Messages, cx);
+            }
+            SlackConversationTabAction::AppHome => {
+                self.select_slack_app_dm_tab(SlackAppDmTab::Home, cx);
+            }
+            SlackConversationTabAction::AppAbout => {
+                self.select_slack_app_dm_tab(SlackAppDmTab::About, cx);
             }
             SlackConversationTabAction::AddCanvas => {}
             SlackConversationTabAction::CanvasLink { tab, permalink } => {

@@ -194,6 +194,23 @@ macro_rules! impl_workspace_api_reads {
             self.loader.load_channel_details(conversation_id)
         }
 
+        fn load_slack_app_dm_details(
+            &self,
+            conversation_id: &str,
+            app_id: Option<&str>,
+            bot_id: Option<&str>,
+        ) -> Result<crate::model::SlackAppDmDetails, String> {
+            self.loader
+                .load_app_dm_details(conversation_id, app_id, bot_id)
+        }
+
+        fn load_slack_app_home_view(
+            &self,
+            view_id: &str,
+        ) -> Result<crate::model::SlackAppHomeView, String> {
+            self.loader.load_app_home_view(view_id)
+        }
+
         fn load_slack_channel_notification_preference(
             &self,
             conversation_id: &str,

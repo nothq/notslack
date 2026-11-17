@@ -190,6 +190,7 @@ impl SurfaceState {
         if tab != SlackMainTab::Messages {
             self.reset_slack_schedule_context(cx);
         }
+        self.reset_slack_app_dm_tab();
         self.leave_slack_bookmark_folder();
         let canvas_available = self.slack_workspace_api_capabilities.load_canvas
             && self

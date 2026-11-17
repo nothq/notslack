@@ -1,5 +1,6 @@
 mod activity;
 mod all_threads;
+mod app_dm;
 mod attachments;
 mod bookmark_folder;
 mod capabilities;
