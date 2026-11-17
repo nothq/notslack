@@ -115,6 +115,9 @@ impl SurfaceState {
             self.close_slack_dms_peek(cx);
             return true;
         }
+        if self.close_slack_lightbox_menu(cx) {
+            return true;
+        }
         if self.slack_expanded_attachment.is_some() {
             self.slack_expanded_attachment = None;
             cx.notify();

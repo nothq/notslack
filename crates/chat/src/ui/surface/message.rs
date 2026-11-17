@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::{
-    alpha, div, img, px, relative, rgb, slack_icon, slack_palette, slack_remote_image_cache_key,
+    alpha, div, img, px, rgb, slack_icon, slack_palette, slack_remote_image_cache_key,
     AnyElement, Context, Div, FluentBuilder, FontWeight, Image, InteractiveElement, IntoElement,
     MouseButton, MouseDownEvent, ParentElement, SlackAttachmentRenderKind, SlackAttachmentRow,
     SlackMediaPlayback, SlackMessageRenderContext, SlackShellIcon, StatefulInteractiveElement,

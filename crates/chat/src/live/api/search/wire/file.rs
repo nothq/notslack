@@ -84,6 +84,10 @@ impl SlackSearchFileWire {
                 self.thumb_80,
             ],
         );
+        let full_image_url = mimetype
+            .starts_with("image/")
+            .then(|| url_private.clone())
+            .flatten();
         let preview_layout_size = self
             .thumb_360_w
             .zip(self.thumb_360_h)
@@ -107,6 +111,7 @@ impl SlackSearchFileWire {
             original_width: self.original_w.filter(|width| *width > 0),
             original_height: self.original_h.filter(|height| *height > 0),
             source_team_id: nonempty(self.source_team),
+            full_image_url,
         }))
     }
 }

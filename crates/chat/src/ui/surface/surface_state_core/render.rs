@@ -11,6 +11,11 @@ impl SurfaceState {
         if std::mem::take(&mut self.slack_message_navigation_focus_pending) {
             window.focus(&self.focus_handle, cx);
         }
+        if let Some(view) = self.slack_lightbox.as_mut() {
+            if std::mem::take(&mut view.focus_pending) {
+                window.focus(&view.focus, cx);
+            }
+        }
         if std::mem::take(&mut self.slack_channel_move_menu_focus_pending) {
             window.focus(&self.slack_channel_move_menu_focus_handle, cx);
         }

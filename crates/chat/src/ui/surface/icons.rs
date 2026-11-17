@@ -114,6 +114,12 @@ pub(crate) enum SlackShellIcon {
     Send,
     Close,
     WarningFilled,
+    ViewerRotate,
+    ViewerZoomIn,
+    ViewerZoomOut,
+    ViewerReset,
+    ViewerDownload,
+    ViewerThread,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]

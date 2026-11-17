@@ -19,6 +19,7 @@ impl SurfaceState {
             original_width: None,
             original_height: None,
             source_team_id: None,
+            full_image_url: None,
         }
     }
 
@@ -39,6 +40,7 @@ impl SurfaceState {
             original_width: None,
             original_height: None,
             source_team_id: None,
+            full_image_url: None,
         }
     }
 }

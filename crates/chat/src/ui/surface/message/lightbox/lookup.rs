@@ -198,3 +198,52 @@ pub(super) fn find_slack_attachment_in_rows_by_title<'a>(
     }
     None
 }
+
+impl SurfaceState {
+    /// The message, in any list on screen, that holds the attachment.
+    pub(crate) fn find_slack_message_owning_attachment(
+        &self,
+        attachment_id: &str,
+    ) -> Option<&SlackMessageRow> {
+        let panel_rows = self
+            .slack_thread_panel
+            .iter()
+            .flat_map(|panel| std::iter::once(&panel.parent_row).chain(panel.reply_rows.iter()));
+        let thread_rows = self
+            .slack_all_threads_rows
+            .iter()
+            .flat_map(|thread| std::iter::once(&thread.parent).chain(thread.replies.iter()));
+        let activity_rows = match &self.slack_activity_detail {
+            SlackActivityDetailState::Loaded { rows, .. } => &rows[..],
+            _ => &[],
+        };
+        let later_rows = self
+            .slack_later_rows
+            .iter()
+            .filter_map(|row| row.thread_target())
+            .map(|detail| &detail.selected_message_row);
+        let pin_rows = self.slack_pins_rows.iter().map(|pin| &pin.message);
+        panel_rows
+            .chain(self.slack_message_rows.iter())
+            .chain(thread_rows)
+            .chain(activity_rows.iter())
+            .chain(later_rows)
+            .chain(pin_rows)
+            .find_map(|row| slack_message_owning_attachment(row, attachment_id))
+    }
+}
+
+fn slack_message_owning_attachment<'a>(
+    row: &'a SlackMessageRow,
+    attachment_id: &str,
+) -> Option<&'a SlackMessageRow> {
+    let owns = row.attachments.iter().any(|attachment| {
+        find_slack_attachment_selection_in_row_by_id(attachment, attachment_id).is_some()
+    });
+    if owns {
+        return Some(row);
+    }
+    row.replies
+        .iter()
+        .find_map(|reply| slack_message_owning_attachment(reply, attachment_id))
+}

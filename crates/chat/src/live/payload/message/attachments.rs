@@ -96,6 +96,7 @@ pub(in crate::live::payload) fn slack_attachment_from_file(
         original_width: value_as_u32(file.get("original_w")).filter(|width| *width > 0),
         original_height: value_as_u32(file.get("original_h")).filter(|height| *height > 0),
         source_team_id: string_at(file, &["source_team"]),
+        full_image_url: slack_attachment_full_image_url(file),
     })
 }
 
@@ -158,6 +159,7 @@ fn slack_attachment_metadata_from_message_attachment_with_context(
         original_width: None,
         original_height: None,
         source_team_id: None,
+        full_image_url: None,
     })
 }
 
@@ -293,6 +295,7 @@ fn slack_attachment_from_block_image(
         original_width: None,
         original_height: None,
         source_team_id: None,
+        full_image_url: None,
     })
 }
 
@@ -325,6 +328,14 @@ fn slack_attachment_image_size_label(image_bytes: u32) -> String {
 struct SlackAttachmentPreviewSelection {
     url: String,
     layout_size: Option<SlackAttachmentPreviewSize>,
+}
+
+/// An image file's original, which the viewer shows at full size.
+fn slack_attachment_full_image_url(file: &Value) -> Option<String> {
+    string_at(file, &["mimetype"])
+        .is_some_and(|mimetype| mimetype.starts_with("image/"))
+        .then(|| string_at(file, &["url_private"]))
+        .flatten()
 }
 
 fn slack_attachment_preview(file: &Value) -> Option<SlackAttachmentPreviewSelection> {

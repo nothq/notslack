@@ -172,6 +172,8 @@ impl SurfaceState {
             .slack_thread_panel
             .as_ref()
             .filter(|panel| panel.origin.is_conversation())
+            // The image viewer shows the thread beside the image instead.
+            .filter(|_| self.slack_lightbox_thread_panel().is_none())
             .cloned();
         let expanded_attachment = self.slack_expanded_attachment.clone();
         div()

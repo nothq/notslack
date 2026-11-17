@@ -1,18 +1,26 @@
 use super::{
-    alpha, div, img, px, relative, rgb, slack_icon, slack_remote_image_cache_key, AnyElement, Arc,
-    Context, Div, FluentBuilder, FontWeight, Image, InteractiveElement, IntoElement, MouseButton,
+    alpha, div, img, px, rgb, slack_icon, slack_remote_image_cache_key, AnyElement, Arc, Context,
+    Div, FluentBuilder, FontWeight, Image, InteractiveElement, IntoElement, MouseButton,
     MouseDownEvent, ParentElement, SlackMediaPlayback, SlackShellIcon, StatefulInteractiveElement,
     Styled, SurfaceState,
 };
 #[cfg(test)]
 use crate::ui::surface::SlackActivityDetailState;
+use crate::ui::surface::{slack_base_icon_radius, slack_lightbox_shows_image};
 use crate::ui::surface::{SlackAttachmentSelection, SlackMediaHostId};
 use crate::ui::SlackAttachment;
 use gpui::{ObjectFit, Role, StyledImage};
 use gpui_components::backdrop::{dismissible_backdrop, BackdropDismissal};
+use viewer::{render_slack_lightbox_notice, slack_lightbox_ago};
 
 mod lookup;
 mod media_controls;
+mod viewer;
+
+/// The gap between the viewer and the window's edges.
+const SLACK_LIGHTBOX_INSET: f32 = 32.0;
+/// The bar of controls along the bottom of the viewer.
+const SLACK_LIGHTBOX_TOOLBAR_HEIGHT: f32 = 68.0;
 
 #[cfg(test)]
 use lookup::find_slack_attachment_in_rows_by_title;
@@ -48,16 +56,11 @@ impl SurfaceState {
             .id("slack-attachment-lightbox")
             .role(Role::Dialog)
             .aria_label(format!("Preview {}", attachment.title))
-            .focusable()
-            .tab_stop(true)
             .absolute()
             .left(px(0.0))
             .right(px(0.0))
             .top(px(0.0))
             .bottom(px(0.0))
-            .flex()
-            .items_center()
-            .justify_center()
             .child(backdrop)
             .child(self.render_slack_attachment_lightbox_card(selection, attachment, cx))
             .into_any_element()
@@ -68,29 +71,65 @@ impl SurfaceState {
         selection: &SlackAttachmentSelection,
         attachment: &SlackAttachment,
         cx: &mut Context<Self>,
-    ) -> Div {
-        div()
-            .w(relative(0.82))
-            .h(relative(0.82))
-            .max_w(px(760.0))
-            .max_h(px(640.0))
-            .min_w(px(320.0))
-            .min_h(px(240.0))
-            .rounded(px(14.0))
+    ) -> gpui::Stateful<Div> {
+        let thread_panel = self.slack_lightbox_thread_panel().cloned();
+        let card = div()
+            .id("slack-attachment-lightbox-card")
+            .absolute()
+            .left(px(SLACK_LIGHTBOX_INSET))
+            .right(px(SLACK_LIGHTBOX_INSET))
+            .top(px(SLACK_LIGHTBOX_INSET))
+            .bottom(px(SLACK_LIGHTBOX_INSET))
+            .rounded(px(10.0))
             .overflow_hidden()
             .border_1()
             .border_color(alpha(0xffffff, 0.10))
-            .bg(rgb(0x111214))
+            .bg(rgb(0x1a1d21))
             .flex()
             .flex_col()
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|_, _: &MouseDownEvent, _, cx| {
+                cx.listener(|this, _: &MouseDownEvent, _, cx| {
+                    this.close_slack_lightbox_menu(cx);
                     cx.stop_propagation();
                 }),
             )
+            .on_mouse_move(cx.listener(|this, event: &gpui::MouseMoveEvent, _, cx| {
+                if event.pressed_button == Some(MouseButton::Left) {
+                    this.drag_slack_lightbox(event.position, cx);
+                } else {
+                    this.end_slack_lightbox_drag();
+                }
+            }))
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(|this, _: &gpui::MouseUpEvent, _, cx| {
+                    this.end_slack_lightbox_drag();
+                    cx.notify();
+                }),
+            )
             .child(self.render_slack_attachment_lightbox_header(attachment, cx))
-            .child(self.render_slack_attachment_lightbox_body(selection, attachment, cx))
+            .child(
+                div()
+                    .flex_grow(1.0)
+                    .min_h(px(0.0))
+                    .flex()
+                    .child(self.render_slack_attachment_lightbox_stage(selection, attachment, cx))
+                    .when_some(thread_panel, |this, panel| {
+                        this.child(self.render_slack_thread_panel(&panel, cx))
+                    }),
+            );
+        match self.slack_lightbox_view() {
+            Some(view) => card.track_focus(&view.focus).on_key_down(cx.listener(
+                |this, event: &gpui::KeyDownEvent, window, cx| {
+                    if this.handle_slack_lightbox_key(event, window, cx) {
+                        window.prevent_default();
+                        cx.stop_propagation();
+                    }
+                },
+            )),
+            None => card,
+        }
     }
 
     #[cfg(test)]
@@ -160,24 +199,69 @@ impl SurfaceState {
         attachment: &SlackAttachment,
         cx: &mut Context<Self>,
     ) -> Div {
+        let message = self.slack_lightbox_message();
+        let author = message.map(|row| row.author.clone());
+        let subtitle = self.slack_lightbox_subtitle(attachment);
+        let avatar = message.map(|row| {
+            let image = row
+                .avatar_image_url
+                .as_deref()
+                .and_then(|url| self.slack_remote_images.get(url).cloned());
+            let face = div()
+                .size(px(36.0))
+                .flex_none()
+                .rounded(slack_base_icon_radius(36.0))
+                .overflow_hidden();
+            match image {
+                Some(image) => face.child(img(image).size_full()),
+                None => face
+                    .bg(rgb(row.avatar_fill))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_size(px(13.0))
+                    .font_weight(FontWeight::BOLD)
+                    .text_color(rgb(0xffffff))
+                    .child(row.avatar_text.clone()),
+            }
+        });
         div()
-            .h(px(48.0))
+            .h(px(64.0))
+            .flex_none()
             .px(px(16.0))
             .flex()
             .items_center()
-            .justify_between()
+            .gap(px(12.0))
             .border_b_1()
             .border_color(alpha(0xffffff, 0.08))
+            .children(avatar)
             .child(
                 div()
                     .min_w(px(0.0))
-                    .overflow_hidden()
-                    .whitespace_nowrap()
-                    .text_ellipsis()
-                    .text_size(px(14.0))
-                    .font_weight(FontWeight::MEDIUM)
-                    .text_color(rgb(0xffffff))
-                    .child(attachment.title.clone()),
+                    .flex_grow(1.0)
+                    .flex()
+                    .flex_col()
+                    .child(
+                        div()
+                            .overflow_hidden()
+                            .whitespace_nowrap()
+                            .text_ellipsis()
+                            .text_size(px(15.0))
+                            .font_weight(FontWeight::BOLD)
+                            .text_color(rgb(0xffffff))
+                            .child(author.unwrap_or_else(|| attachment.title.clone())),
+                    )
+                    .when_some(subtitle, |this, subtitle| {
+                        this.child(
+                            div()
+                                .overflow_hidden()
+                                .whitespace_nowrap()
+                                .text_ellipsis()
+                                .text_size(px(13.0))
+                                .text_color(rgb(0xc7cbd0))
+                                .child(subtitle),
+                        )
+                    }),
             )
             .child(
                 div()
@@ -186,7 +270,8 @@ impl SurfaceState {
                     .aria_label("Close attachment preview")
                     .focusable()
                     .tab_stop(true)
-                    .size(px(28.0))
+                    .size(px(36.0))
+                    .flex_none()
                     .rounded(px(8.0))
                     .cursor_pointer()
                     .flex()
@@ -206,7 +291,79 @@ impl SurfaceState {
                             this.close_slack_expanded_attachment(cx);
                         }
                     }))
-                    .child(slack_icon(SlackShellIcon::Close, 0xc8cbd0, 18.0, cx)),
+                    .child(slack_icon(SlackShellIcon::Close, 0xc8cbd0, 20.0, cx)),
+            )
+    }
+
+    /// "4 hours ago in # ge-qb – image.png", like Slack's viewer.
+    fn slack_lightbox_subtitle(&self, attachment: &SlackAttachment) -> Option<String> {
+        let target = self.slack_lightbox_message()?.action_target.clone()?;
+        let seconds = target
+            .message_timestamp()
+            .as_str()
+            .split('.')
+            .next()?
+            .parse::<i64>()
+            .ok()?;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_secs() as i64)
+            .unwrap_or(seconds);
+        let mut subtitle = slack_lightbox_ago(now - seconds);
+        let conversation = self
+            .slack_sidebar_rows
+            .iter()
+            .find_map(|row| match &row.kind {
+                crate::ui::surface::SlackSidebarRowKind::Item { item, .. }
+                    if item.target_id == target.conversation_id() =>
+                {
+                    Some(item)
+                }
+                _ => None,
+            });
+        if let Some(item) = conversation {
+            let prefix = if item.target_kind.is_channel() {
+                "# "
+            } else {
+                ""
+            };
+            subtitle.push_str(&format!(" in {prefix}{}", item.label));
+        }
+        subtitle.push_str(&format!("  –  {}", attachment.title));
+        Some(subtitle)
+    }
+
+    fn render_slack_attachment_lightbox_stage(
+        &self,
+        selection: &SlackAttachmentSelection,
+        attachment: &SlackAttachment,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let shows_image = slack_lightbox_shows_image(attachment)
+            && self.slack_lightbox_image(attachment).is_some();
+        let content = if shows_image {
+            self.render_slack_lightbox_image(attachment, cx)
+        } else {
+            div()
+                .size_full()
+                .p(px(16.0))
+                .pb(px(SLACK_LIGHTBOX_TOOLBAR_HEIGHT))
+                .child(self.render_slack_attachment_lightbox_body(selection, attachment, cx))
+                .into_any_element()
+        };
+        div()
+            .relative()
+            .flex_grow(1.0)
+            .min_w(px(0.0))
+            .h_full()
+            .overflow_hidden()
+            .bg(rgb(0x111214))
+            .child(content)
+            .child(self.render_slack_lightbox_toolbar(attachment, shows_image, cx))
+            .when_some(
+                self.slack_lightbox_view()
+                    .and_then(|view| view.notice.clone()),
+                |this, notice| this.child(render_slack_lightbox_notice(notice)),
             )
     }
 
@@ -215,33 +372,31 @@ impl SurfaceState {
         selection: &SlackAttachmentSelection,
         attachment: &SlackAttachment,
         cx: &mut Context<Self>,
-    ) -> Div {
-        div().flex_grow(1.0).min_h(px(0.0)).p(px(16.0)).child(
-            if attachment.media.is_some()
-                && self
-                    .slack_workspace_api_capabilities
-                    .prepare_attachment_media
-            {
-                self.render_slack_attachment_media(selection, attachment, cx)
-            } else if let Some(image) = self.slack_attachment_preview_image(attachment) {
-                img(image)
-                    .size_full()
-                    .object_fit(ObjectFit::Contain)
-                    .into_any_element()
-            } else {
-                div()
-                    .size_full()
-                    .rounded(px(12.0))
-                    .bg(rgb(0x1a1d21))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .text_size(px(15.0))
-                    .text_color(rgb(0xc7cbd0))
-                    .child(attachment.title.clone())
-                    .into_any_element()
-            },
-        )
+    ) -> AnyElement {
+        if attachment.media.is_some()
+            && self
+                .slack_workspace_api_capabilities
+                .prepare_attachment_media
+        {
+            self.render_slack_attachment_media(selection, attachment, cx)
+        } else if let Some(image) = self.slack_attachment_preview_image(attachment) {
+            img(image)
+                .size_full()
+                .object_fit(ObjectFit::Contain)
+                .into_any_element()
+        } else {
+            div()
+                .size_full()
+                .rounded(px(12.0))
+                .bg(rgb(0x1a1d21))
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_size(px(15.0))
+                .text_color(rgb(0xc7cbd0))
+                .child(attachment.title.clone())
+                .into_any_element()
+        }
     }
 
     fn render_slack_attachment_media(

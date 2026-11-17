@@ -187,6 +187,7 @@ fn slack_shared_message_file_row(
         original_width: file.original_width,
         original_height: file.original_height,
         source_team_id: None,
+        full_image_url: None,
     };
     SlackSharedMessageFileRow {
         attachment_id: format!("{attachment_id}-file-{index}").into(),

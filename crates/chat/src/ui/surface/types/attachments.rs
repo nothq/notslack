@@ -7,8 +7,10 @@ use super::{
 use crate::ui::{AudioPreviewPlayer, SlackRailView, VideoPlayer, WorkspaceApi};
 use gpui::Subscription;
 
+mod lightbox;
 mod message_actions;
 
+pub(crate) use lightbox::*;
 pub(crate) use message_actions::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

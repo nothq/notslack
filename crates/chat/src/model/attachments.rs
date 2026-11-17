@@ -256,6 +256,10 @@ pub struct SlackAttachment {
     pub original_height: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_team_id: Option<String>,
+    /// The image at full size, for the image viewer; the preview is a
+    /// thumbnail.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub full_image_url: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -283,6 +287,7 @@ impl SlackAttachment {
             original_width: None,
             original_height: None,
             source_team_id: None,
+            full_image_url: None,
         }
     }
 
@@ -308,6 +313,7 @@ impl SlackAttachment {
             original_width: None,
             original_height: None,
             source_team_id: None,
+            full_image_url: None,
         }
     }
 

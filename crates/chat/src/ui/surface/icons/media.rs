@@ -1,7 +1,34 @@
-use super::{slack_even_odd_icon, Arc, Image, SlackShellIcon};
+use super::{slack_even_odd_icon, svg_from_body, Arc, Image, SlackShellIcon};
 
 pub(super) fn slack_media_icon_image(icon: SlackShellIcon, fill: u32) -> Option<Arc<Image>> {
-    capture_icon_image(icon, fill)
+    capture_icon_image(icon, fill).or_else(|| viewer_icon_image(icon, fill))
+}
+
+/// The image viewer's controls, drawn as 1.5px strokes like Slack's.
+fn viewer_icon_image(icon: SlackShellIcon, fill: u32) -> Option<Arc<Image>> {
+    let paths = match icon {
+        SlackShellIcon::ViewerRotate => {
+            r#"<path d="M16 10a6 6 0 1 1-1.76-4.24"/><path d="M16 3.5v3.25h-3.25"/>"#
+        }
+        SlackShellIcon::ViewerZoomIn => r#"<path d="M4 10h12M10 4v12"/>"#,
+        SlackShellIcon::ViewerZoomOut => r#"<path d="M4 10h12"/>"#,
+        SlackShellIcon::ViewerReset => {
+            r#"<path d="M10 2.5v5.5M7.5 5.5 10 8l2.5-2.5M10 17.5V12M7.5 14.5 10 12l2.5 2.5M4 10h12"/>"#
+        }
+        SlackShellIcon::ViewerDownload => {
+            r#"<path d="M6 14.5H5.5a3.5 3.5 0 0 1-.4-6.98 5 5 0 0 1 9.8 0 3.5 3.5 0 0 1-.4 6.98H14"/><path d="M10 9v8M7.5 14.5 10 17l2.5-2.5"/>"#
+        }
+        SlackShellIcon::ViewerThread => {
+            r#"<rect x="3" y="3.5" width="14" height="13" rx="2.5"/><path d="M11.5 3.5v13M13.75 7.5h1M13.75 10h1M13.75 12.5h1"/>"#
+        }
+        _ => return None,
+    };
+    Some(svg_from_body(
+        "0 0 20 20",
+        format!(
+            r##"<g fill="none" stroke="#{fill:06x}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{paths}</g>"##
+        ),
+    ))
 }
 
 fn capture_icon_image(icon: SlackShellIcon, fill: u32) -> Option<Arc<Image>> {

@@ -148,6 +148,7 @@ impl SurfaceState {
             }
         } else {
             self.slack_expanded_attachment = Some(selection.clone());
+            self.begin_slack_lightbox_view(selection, cx);
             self.slack_aux_panel = None;
             self.activate_slack_attachment_media(
                 selection,
