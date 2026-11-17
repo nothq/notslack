@@ -104,6 +104,28 @@ fn push_slack_block_kit_block(
         SlackBlockKitBlock::Actions { elements } => {
             push_slack_block_kit_actions(prepared, elements)
         }
+        SlackBlockKitBlock::WorkObject { card } => {
+            let mut block =
+                SlackMessageBodyBlockBuilder::new(SlackMessageBodyBlockKind::BlockKitWorkObject);
+            // The title, so the card's text copies and searches.
+            let target = card
+                .url
+                .clone()
+                .map(|url| SlackMessageBodyTarget::Url(url.into()));
+            block.push_target(&card.title, SlackMessageTextStyle::default(), target);
+            for action in &card.actions {
+                block.push_action(slack_message_body_action(action));
+            }
+            block.set_work_object((**card).clone());
+            prepared.push_block(block);
+        }
+        SlackBlockKitBlock::Attachment { color, blocks } => {
+            prepared.begin_attachment(color.as_deref());
+            for block in blocks {
+                push_slack_block_kit_block(prepared, block);
+            }
+            prepared.end_attachment();
+        }
     }
 }
 
@@ -177,24 +199,28 @@ fn push_slack_block_kit_actions(
 ) {
     let mut actions = SlackMessageBodyBlockBuilder::new(SlackMessageBodyBlockKind::BlockKitActions);
     for action in elements {
-        actions.push_action(SlackMessageBodyAction {
-            label: action.label.clone().into(),
-            kind: match action.kind {
-                SlackBlockKitActionKind::Button => SlackMessageBodyActionKind::Button,
-                SlackBlockKitActionKind::Select => SlackMessageBodyActionKind::Select,
-                SlackBlockKitActionKind::Overflow => SlackMessageBodyActionKind::Overflow,
-                SlackBlockKitActionKind::DatePicker => SlackMessageBodyActionKind::DatePicker,
-                SlackBlockKitActionKind::TimePicker => SlackMessageBodyActionKind::TimePicker,
-            },
-            style: match action.style {
-                SlackBlockKitActionStyle::Default => SlackMessageBodyActionStyle::Default,
-                SlackBlockKitActionStyle::Primary => SlackMessageBodyActionStyle::Primary,
-                SlackBlockKitActionStyle::Danger => SlackMessageBodyActionStyle::Danger,
-            },
-            url: action.url.clone().map(Into::into),
-        });
+        actions.push_action(slack_message_body_action(action));
     }
     prepared.push_block(actions);
+}
+
+fn slack_message_body_action(action: &crate::model::SlackBlockKitAction) -> SlackMessageBodyAction {
+    SlackMessageBodyAction {
+        label: action.label.clone().into(),
+        kind: match action.kind {
+            SlackBlockKitActionKind::Button => SlackMessageBodyActionKind::Button,
+            SlackBlockKitActionKind::Select => SlackMessageBodyActionKind::Select,
+            SlackBlockKitActionKind::Overflow => SlackMessageBodyActionKind::Overflow,
+            SlackBlockKitActionKind::DatePicker => SlackMessageBodyActionKind::DatePicker,
+            SlackBlockKitActionKind::TimePicker => SlackMessageBodyActionKind::TimePicker,
+        },
+        style: match action.style {
+            SlackBlockKitActionStyle::Default => SlackMessageBodyActionStyle::Default,
+            SlackBlockKitActionStyle::Primary => SlackMessageBodyActionStyle::Primary,
+            SlackBlockKitActionStyle::Danger => SlackMessageBodyActionStyle::Danger,
+        },
+        url: action.url.clone().map(Into::into),
+    }
 }
 
 fn push_slack_block_kit_text(

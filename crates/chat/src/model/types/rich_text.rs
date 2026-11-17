@@ -94,6 +94,8 @@ fn push_slack_block_kit_block(text: &mut String, block: &SlackBlockKitBlock) {
         } => text.push_str(&header.text),
         SlackBlockKitBlock::Section { text: None, .. } | SlackBlockKitBlock::Divider => {}
         SlackBlockKitBlock::Context { elements } => push_slack_block_kit_context(text, elements),
+        SlackBlockKitBlock::WorkObject { card } => text.push_str(&card.title),
+        SlackBlockKitBlock::Attachment { blocks, .. } => push_slack_block_kit_blocks(text, blocks),
         SlackBlockKitBlock::Actions { elements } => {
             for (index, element) in elements.iter().enumerate() {
                 if index > 0 {
@@ -139,6 +141,73 @@ pub enum SlackBlockKitBlock {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         elements: Vec<SlackBlockKitAction>,
     },
+    /// An app's card for one of its records, such as a Jira issue, drawn
+    /// from the attachment's Work Object layout.
+    WorkObject {
+        card: Box<SlackWorkObject>,
+    },
+    /// A message attachment made of blocks, drawn beside a coloured bar.
+    Attachment {
+        /// The attachment's `color`, such as `#1d9bd1` or `good`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        color: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        blocks: Vec<SlackBlockKitBlock>,
+    },
+}
+
+/// Slack's Work Object card: the app's name over a bordered card with the
+/// record's icon, title and subtitle, labelled fields and buttons.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SlackWorkObject {
+    pub app_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_icon_url: Option<String>,
+    pub title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subtitle: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<SlackWorkObjectField>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub actions: Vec<SlackBlockKitAction>,
+    /// When the card was shared, shown as "As of …".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub as_of: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SlackWorkObjectField {
+    pub label: String,
+    pub values: Vec<SlackWorkObjectValue>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SlackWorkObjectValue {
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_url: Option<String>,
+    /// Slack's tag color name, such as "lagoon".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+}
+
+impl SlackWorkObject {
+    pub fn image_urls(&self) -> impl Iterator<Item = &str> {
+        self.app_icon_url
+            .iter()
+            .chain(self.icon_url.iter())
+            .chain(
+                self.fields
+                    .iter()
+                    .flat_map(|field| field.values.iter())
+                    .filter_map(|value| value.icon_url.as_ref()),
+            )
+            .map(String::as_str)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

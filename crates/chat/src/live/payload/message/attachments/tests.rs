@@ -115,3 +115,57 @@ fn slack_message_extracts_image_block_attachments() {
     );
     assert_eq!(message.attachments[0].description, "(187 kB)");
 }
+
+#[test]
+fn an_app_card_attachment_shows_its_blocks_instead_of_no_preview_available() {
+    let message = slack_message_from_value(
+        json!({
+            "ts": "1700000000.000100",
+            "user": "U1",
+            "text": "for https://geniused.atlassian.net/jira/browse/GE-9776",
+            "blocks": [{
+                "type": "rich_text",
+                "elements": [{
+                    "type": "rich_text_section",
+                    "elements": [{"type": "text", "text": "for GE-9776"}]
+                }]
+            }],
+            "attachments": [{
+                "fallback": "[no preview available]",
+                "service_name": "geniused.atlassian.net",
+                "color": "#1d9bd1",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {"type": "mrkdwn", "text": "*Reposition Print All Uploads*\nTask GE-9776 in Jira Cloud"}
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {"type": "mrkdwn", "text": "*Status*\nIn Progress"},
+                            {"type": "mrkdwn", "text": "*Priority*\nMinor"}
+                        ]
+                    }
+                ]
+            }]
+        }),
+        &HashMap::new(),
+    );
+    assert!(
+        message.attachments.is_empty(),
+        "the card shows as blocks, not as an attachment"
+    );
+    let body = message.rich_body.expect("rich body");
+    let [crate::model::SlackBlockKitBlock::Attachment { color, blocks }] =
+        body.block_kit.as_slice()
+    else {
+        panic!(
+            "the card's blocks stay together as one attachment: {:?}",
+            body.block_kit
+        );
+    };
+    assert_eq!(color.as_deref(), Some("#1d9bd1"));
+    assert_eq!(blocks.len(), 2);
+    assert!(message.body.contains("Task GE-9776 in Jira Cloud"));
+    assert!(!message.body.contains("no preview available"));
+}

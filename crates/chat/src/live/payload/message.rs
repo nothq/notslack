@@ -27,7 +27,7 @@ pub(super) use history::{
 };
 pub(crate) use rich_text::slack_message_body;
 pub(in crate::live) use rich_text::slack_rich_text_body_from_blocks;
-use rich_text::{slack_message_reactions, slack_rich_text_body};
+use rich_text::{slack_attachment_block_kit, slack_message_reactions, slack_rich_text_body};
 pub(super) use send_receipt::{
     slack_message_send_receipt_from_payload, SlackMessageSendReceiptPayloads,
 };
@@ -56,6 +56,18 @@ pub(super) fn slack_message_from_value_with_context(
     )
 }
 
+/// When a card was shared, as Slack's "As of" footer shows it.
+fn slack_card_shared_at(timestamp: &str, timezone: Tz) -> Option<String> {
+    let seconds = timestamp.split('.').next()?.parse::<i64>().ok()?;
+    let shared = chrono::DateTime::<chrono::Utc>::from_timestamp(seconds, 0)?;
+    Some(
+        shared
+            .with_timezone(&timezone)
+            .format("%b %-d at %-I:%M %p")
+            .to_string(),
+    )
+}
+
 pub(crate) fn slack_message_from_value_with_context_in_timezone(
     message: Value,
     users: &HashMap<String, Value>,
@@ -69,8 +81,19 @@ pub(crate) fn slack_message_from_value_with_context_in_timezone(
         .map(str::to_string);
     let user = user_id.as_deref().and_then(|user_id| users.get(user_id));
     let author = slack_message_author(&message, user_id.as_deref(), users);
-    let attachments = slack_message_attachments(&message, users, sidebar_snapshot);
-    let rich_body = slack_rich_text_body(&message, users, sidebar_snapshot);
+    let mut rich_body = slack_rich_text_body(&message, users, sidebar_snapshot);
+    // An attachment that is a Block Kit card shows as those blocks under the
+    // message, in place of its "[no preview available]" placeholder.
+    let attachment_cards = rich_body.as_mut().is_some_and(|body| {
+        let as_of = string_at(&message, &["ts"])
+            .and_then(|timestamp| slack_card_shared_at(&timestamp, timezone));
+        let cards = slack_attachment_block_kit(&message, as_of.as_deref());
+        let any = !cards.is_empty();
+        body.block_kit.extend(cards);
+        any
+    });
+    let attachments =
+        slack_message_attachments(&message, users, sidebar_snapshot, attachment_cards);
     let body = rich_body
         .as_ref()
         .map(SlackRichTextBody::plain_text)

@@ -16,10 +16,13 @@ use super::super::{
     },
 };
 
+/// `skip_block_cards` leaves out attachments made of Block Kit, when the
+/// message body shows their blocks instead.
 pub(super) fn slack_message_attachments(
     message: &Value,
     users: &HashMap<String, Value>,
     sidebar_snapshot: Option<&SlackSidebarSnapshot>,
+    skip_block_cards: bool,
 ) -> Vec<SlackAttachment> {
     let files = message
         .get("files")
@@ -32,6 +35,13 @@ pub(super) fn slack_message_attachments(
         .and_then(Value::as_array)
         .into_iter()
         .flatten()
+        .filter(|attachment| {
+            !skip_block_cards
+                || attachment
+                    .get("blocks")
+                    .and_then(Value::as_array)
+                    .is_none_or(Vec::is_empty)
+        })
         .filter_map(|attachment| {
             slack_attachment_from_message_attachment(attachment, users, sidebar_snapshot)
         });

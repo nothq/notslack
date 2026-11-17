@@ -1,5 +1,6 @@
 mod block_kit;
 mod reactions;
+mod work_object;
 
 use std::collections::HashMap;
 
@@ -29,6 +30,41 @@ pub(crate) fn slack_message_body(message: &Value, has_attachments: bool) -> Stri
     } else {
         body.to_string()
     }
+}
+
+/// The Block Kit of the message's attachments. Apps such as Jira Cloud
+/// send their cards this way, with only "[no preview available]" outside
+/// the blocks, beside the attachment's coloured bar. An attachment with a
+/// Work Object layout shows as Slack's card for it instead of its blocks;
+/// `as_of` is when it was shared.
+pub(super) fn slack_attachment_block_kit(
+    message: &Value,
+    as_of: Option<&str>,
+) -> Vec<crate::model::SlackBlockKitBlock> {
+    let mut cards = Vec::new();
+    let attachments = message
+        .get("attachments")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten();
+    for attachment in attachments {
+        if let Some(card) = work_object::slack_work_object_block(attachment, as_of) {
+            cards.push(card);
+        } else if let Some(blocks) = attachment.get("blocks").and_then(Value::as_array) {
+            let blocks = slack_block_kit_blocks(blocks, false);
+            if !blocks.is_empty() {
+                cards.push(crate::model::SlackBlockKitBlock::Attachment {
+                    color: attachment
+                        .get("color")
+                        .and_then(Value::as_str)
+                        .filter(|color| !color.is_empty())
+                        .map(str::to_string),
+                    blocks,
+                });
+            }
+        }
+    }
+    cards
 }
 
 fn slack_attachment_only_fallback(body: &str) -> bool {

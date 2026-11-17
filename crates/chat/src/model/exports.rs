@@ -154,7 +154,8 @@ pub use super::types::{
     SlackSearchSnapshot, SlackShellSnapshot, SlackSidebarItem, SlackSidebarSection,
     SlackSidebarSnapshot, SlackTableRow, SlackThreadLoad, SlackThreadReadMetadata,
     SlackThreadReadTarget, SlackThreadReplyReceipt, SlackThreadReplyTarget, SlackThreadSnapshot,
-    SlackUserPresence, SlackWorkspace, SlackWorkspaceShell,
+    SlackUserPresence, SlackWorkObject, SlackWorkObjectField, SlackWorkObjectValue, SlackWorkspace,
+    SlackWorkspaceShell,
 };
 pub use super::upload::{
     SlackLocalFileApi, SlackUploadContent, SlackUploadFile, SlackUploadReader,

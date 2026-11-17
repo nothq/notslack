@@ -25,7 +25,8 @@ pub use rich_text::{
     SlackBlockKitAction, SlackBlockKitActionKind, SlackBlockKitActionStyle, SlackBlockKitBlock,
     SlackBlockKitContextElement, SlackBlockKitImage, SlackBlockKitText, SlackBlockKitTextKind,
     SlackRichTextBlock, SlackRichTextBody, SlackRichTextBroadcastRange, SlackRichTextInline,
-    SlackRichTextListStyle, SlackRichTextSection, SlackRichTextStyle,
+    SlackRichTextListStyle, SlackRichTextSection, SlackRichTextStyle, SlackWorkObject,
+    SlackWorkObjectField, SlackWorkObjectValue,
 };
 pub use sidebar::{
     SlackDirectMessageUnreadState, SlackSidebarItem, SlackSidebarSection, SlackWorkspaceShell,
