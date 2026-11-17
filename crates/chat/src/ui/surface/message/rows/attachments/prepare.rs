@@ -140,6 +140,7 @@ fn slack_shared_message_row(
         author_avatar_text: initials(&metadata.author_name).into(),
         author_avatar_fill: slack_avatar_fill(&metadata.author_name),
         author_avatar_image_url: metadata.author_avatar_image_url.clone().map(Into::into),
+        prepared_body: prepare_slack_message_body(&body),
         body: body.into(),
         channel_label: metadata.channel_label.clone().map(Into::into),
         timestamp_label: metadata

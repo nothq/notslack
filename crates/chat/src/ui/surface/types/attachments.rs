@@ -119,6 +119,8 @@ pub(crate) struct SlackSharedMessageAttachmentRow {
     pub(crate) author_avatar_fill: u32,
     pub(crate) author_avatar_image_url: Option<SharedString>,
     pub(crate) body: SharedString,
+    /// The body's mrkdwn, ready to draw with its links, mentions and styles.
+    pub(crate) prepared_body: SlackMessageBody,
     pub(crate) channel_label: Option<SharedString>,
     pub(crate) timestamp_label: Option<SharedString>,
     pub(crate) permalink: Option<SharedString>,

@@ -134,14 +134,23 @@ fn slack_attachment_metadata_from_message_attachment_with_context(
         .or_else(|| string_at(attachment, &["original_url"]))
         .or_else(|| string_at(attachment, &["from_url"]))
         .unwrap_or_default();
+    let legacy_metadata = slack_legacy_attachment_metadata(attachment, users, sidebar_snapshot);
+    // A forwarded message keeps its line breaks and shows mentions by name,
+    // as Slack does; other attachments read as one line.
+    let shared_message = legacy_metadata.is_shared_message();
     let description = string_at(attachment, &["text"])
-        .map(normalize_whitespace)
+        .map(|text| {
+            if shared_message {
+                super::rich_text::label_slack_mrkdwn_mentions(text.trim(), users)
+            } else {
+                normalize_whitespace(text)
+            }
+        })
         .filter(|text| text != &title)
         .unwrap_or_default();
     let source_label = string_at(attachment, &["service_name"])
         .or_else(|| slack_url_host_label(&link_url))
         .unwrap_or_default();
-    let legacy_metadata = slack_legacy_attachment_metadata(attachment, users, sidebar_snapshot);
     Some(SlackAttachment {
         title,
         source: SlackAttachmentSource::LegacyMessage(Box::new(legacy_metadata)),

@@ -1,3 +1,4 @@
+use super::super::rows::{slack_prepared_message_body, SlackPreparedMessageBodyStyle};
 use crate::ui::surface::{
     slack_icon, slack_palette, SlackAttachmentRow, SlackMessageRenderContext,
     SlackSharedMessageAttachmentRow, SlackShellIcon, SurfaceState,
@@ -6,6 +7,7 @@ use crate::ui::{
     div, img, px, rgb, AppearanceMode, Context, Div, FluentBuilder, FontWeight, InteractiveElement,
     MouseButton, MouseDownEvent, ParentElement, Styled,
 };
+
 mod preview;
 
 impl SurfaceState {
@@ -74,10 +76,18 @@ impl SurfaceState {
                 div()
                     .w_full()
                     .min_w(px(0.0))
-                    .text_size(px(15.0))
-                    .line_height(px(22.0))
-                    .text_color(rgb(palette.main_text))
-                    .child(shared_message.body.clone()),
+                    .child(slack_prepared_message_body(
+                        self,
+                        &shared_message.prepared_body,
+                        None,
+                        SlackPreparedMessageBodyStyle::new(
+                            self.appearance_mode,
+                            render_context,
+                            palette.main_text,
+                            FontWeight::NORMAL,
+                        ),
+                        cx,
+                    )),
             )
             .children(
                 shared_message
