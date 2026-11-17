@@ -11,6 +11,32 @@ use super::{
 
 mod layout_state;
 
+thread_local! {
+    /// Every text input's focus handle, so an app can tell whether typing
+    /// already has somewhere to go.
+    static TEXT_INPUT_FOCUS_HANDLES: std::cell::RefCell<Vec<gpui::WeakFocusHandle>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn register_text_input_focus(focus_handle: &FocusHandle) {
+    TEXT_INPUT_FOCUS_HANDLES.with(|handles| {
+        let mut handles = handles.borrow_mut();
+        handles.retain(|handle| handle.upgrade().is_some());
+        handles.push(focus_handle.downgrade());
+    });
+}
+
+/// Whether any text input has keyboard focus.
+pub fn any_text_input_focused(window: &Window) -> bool {
+    TEXT_INPUT_FOCUS_HANDLES.with(|handles| {
+        handles
+            .borrow()
+            .iter()
+            .filter_map(gpui::WeakFocusHandle::upgrade)
+            .any(|handle| handle.is_focused(window))
+    })
+}
+
 impl TextInput {
     pub fn new(props: TextInputProps, cx: &mut Context<Self>) -> Self {
         assert!(
@@ -21,6 +47,7 @@ impl TextInput {
         let focus_handle = cx
             .focus_handle()
             .tab_stop(props.accessibility.is_some() && !props.disabled);
+        register_text_input_focus(&focus_handle);
         let callbacks = TextInputCallbacks::from_props(&props);
         assert_atoms_fit(content.as_ref(), &props.atoms, props.ghost.as_ref());
         Self::from_initial_props(props, content, focus_handle, callbacks, cx)

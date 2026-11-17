@@ -83,6 +83,7 @@ mod sidebar_section;
 mod slackbot;
 mod thread;
 mod thread_reply;
+mod type_to_compose;
 mod utils;
 mod video_clip;
 mod workspace;

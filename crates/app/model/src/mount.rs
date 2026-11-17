@@ -100,7 +100,12 @@ pub trait SurfaceRoot: 'static {
         false
     }
 
-    fn handle_workspace_key_down(&mut self, _event: &KeyDownEvent, _cx: &mut App) -> bool {
+    fn handle_workspace_key_down(
+        &mut self,
+        _event: &KeyDownEvent,
+        _window: &mut Window,
+        _cx: &mut App,
+    ) -> bool {
         false
     }
 }

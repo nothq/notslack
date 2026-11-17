@@ -38,8 +38,19 @@ impl AppSurfaceRoot for SurfaceRoot {
         !surface.read(cx).slack_text_entry_focused(window, cx)
     }
 
-    fn handle_workspace_key_down(&mut self, event: &KeyDownEvent, cx: &mut App) -> bool {
-        self.handle_key_down(event, cx)
+    fn handle_workspace_key_down(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> bool {
+        // With nothing focused the keys arrive here, so typing still goes
+        // into the message box.
+        let surface = self.ensure_surface(cx);
+        surface.update(cx, |surface, cx| {
+            surface.handle_slack_key_down(event, cx)
+                || surface.type_into_slack_composer(event, window, cx)
+        })
     }
 
     fn render_surface(&mut self, _window: &mut Window, cx: &mut gpui::App) -> AnyElement {

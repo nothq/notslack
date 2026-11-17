@@ -17,7 +17,8 @@ impl SurfaceState {
         if self.slack_text_entry_focused(window, cx) {
             return;
         }
-        if self.handle_slack_key_down(event, cx) {
+        if self.handle_slack_key_down(event, cx) || self.type_into_slack_composer(event, window, cx)
+        {
             cx.stop_propagation();
         }
     }

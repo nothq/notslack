@@ -19,6 +19,7 @@ mod selection;
 use callbacks::TextInputCallbacks;
 use layout::{hard_line_count, shape_text_layout, TextLayoutCache, TextLayoutLine};
 pub use offsets::{ceil_grapheme_boundary, floor_grapheme_boundary};
+pub use state::any_text_input_focused;
 
 const CARET_BLINK_MS: u64 = 530;
 
